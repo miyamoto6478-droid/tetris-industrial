@@ -1,0 +1,4537 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tetromill Industries</title>
+  <style>
+    :root {
+      --bg: #0b1014;
+      --bg2: #111921;
+      --panel: rgba(17, 25, 32, 0.92);
+      --panel2: rgba(23, 35, 45, 0.96);
+      --line: rgba(255, 255, 255, 0.08);
+      --text: #edf3f6;
+      --muted: #9eb0bd;
+      --accent: #ff9f1c;
+      --accent2: #ffd166;
+      --cyan: #4cc9f0;
+      --green: #69df9b;
+      --red: #ff6b6b;
+      --radius: 22px;
+      --shadow: 0 18px 42px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      color: var(--text);
+      font-family: "Bahnschrift", "Yu Gothic UI", sans-serif;
+      background:
+        radial-gradient(circle at 12% 14%, rgba(255,159,28,0.14), transparent 25%),
+        radial-gradient(circle at 86% 20%, rgba(76,201,240,0.12), transparent 22%),
+        linear-gradient(160deg, #0a0f13 0%, #10171d 48%, #0b1014 100%);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.12;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 34px 34px;
+    }
+
+    .app {
+      width: min(1280px, calc(100vw - 24px));
+      margin: 18px auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 10px;
+      z-index: 30;
+      display: grid;
+      gap: 14px;
+      padding: 18px;
+      border-radius: 28px;
+      background: rgba(10, 15, 20, 0.9);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .brand-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .topbar-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 0.95;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .brand p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .resource-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+    }
+
+    .resource {
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+    }
+
+    .resource span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .resource strong {
+      display: block;
+      margin-top: 6px;
+      font-size: clamp(1.15rem, 2.6vw, 1.7rem);
+      line-height: 1.15;
+    }
+
+    .cash strong { color: var(--accent2); }
+    .scrap strong { color: var(--cyan); }
+    .parts strong { color: var(--green); }
+    .modules strong { color: #ffb4a2; }
+    .circuits strong { color: #f28482; }
+    .engines strong { color: #bde0fe; }
+    .cores strong { color: #cdb4db; }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn,
+    .action-btn,
+    .shop-btn,
+    .ghost-btn,
+    .toggle-btn {
+      border: 0;
+      cursor: pointer;
+      transition: transform 0.15s ease, filter 0.2s ease, opacity 0.2s ease;
+    }
+
+    .tab-btn {
+      padding: 12px 18px;
+      border-radius: 999px;
+      color: var(--text);
+      background: #1a252d;
+      font-weight: 800;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+    }
+
+    .tab-btn.active {
+      color: #1a1305;
+      background: linear-gradient(135deg, var(--accent), #f77f00);
+      box-shadow: 0 10px 24px rgba(255,159,28,0.32);
+    }
+
+    .tab-btn:disabled,
+    .action-btn:disabled,
+    .shop-btn:disabled,
+    .ghost-btn:disabled,
+    .toggle-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+      filter: none;
+    }
+
+    .action-btn {
+      width: 100%;
+      padding: 16px 18px;
+      border-radius: 18px;
+      font-size: 1rem;
+      font-weight: 800;
+      color: #1b1306;
+      background: linear-gradient(135deg, var(--accent), #f77f00);
+      box-shadow: 0 12px 28px rgba(255,159,28,0.3);
+    }
+
+    .action-btn.secondary,
+    .ghost-btn,
+    .toggle-btn,
+    .shop-btn {
+      color: var(--text);
+      background: linear-gradient(180deg, #23313c, #1a242c);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+    }
+
+    .toggle-btn.on {
+      color: #07120b;
+      background: linear-gradient(135deg, var(--green), #2bb673);
+    }
+
+    .ghost-btn,
+    .toggle-btn {
+      padding: 12px 14px;
+      border-radius: 14px;
+      font-weight: 800;
+    }
+
+    .shop-btn {
+      min-width: 172px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .shop-btn span,
+    .shop-btn small {
+      display: block;
+    }
+
+    .shop-btn small {
+      margin-top: 4px;
+      color: var(--accent2);
+      font-size: 0.8rem;
+      line-height: 1.35;
+    }
+
+    .tab-btn:hover,
+    .action-btn:hover,
+    .shop-btn:hover,
+    .ghost-btn:hover,
+    .toggle-btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.04);
+    }
+
+    .main {
+      margin-top: 18px;
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
+      gap: 20px;
+    }
+
+    .card {
+      padding: 20px;
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, var(--panel), var(--panel2));
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: 1.28rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .section-head p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .status-pill {
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      color: var(--accent2);
+      font-size: 0.82rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .board {
+      position: relative;
+      overflow: hidden;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0)),
+        linear-gradient(180deg, #17222b 0%, #0f171d 100%);
+      box-shadow: inset 0 12px 42px rgba(0,0,0,0.36);
+    }
+
+    .board::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: 0.26;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 34px 34px;
+    }
+
+    .manual-board {
+      min-height: 560px;
+    }
+
+    .ai-board {
+      height: 460px;
+    }
+
+    .line-flash {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: 16px;
+      height: 18px;
+      opacity: 0;
+      pointer-events: none;
+      background: linear-gradient(90deg, transparent, rgba(255,225,148,0.95), transparent);
+      filter: blur(2px);
+    }
+
+    .line-flash.show {
+      animation: lineFlash 0.46s ease-out;
+    }
+
+    .piece {
+      --cell: 18px;
+      --travel: 330px;
+      --spin: 0deg;
+      position: absolute;
+      top: -84px;
+      width: calc(var(--cell) * 4);
+      height: calc(var(--cell) * 4);
+      pointer-events: none;
+      animation: pieceDrop linear forwards;
+      z-index: 2;
+    }
+
+    .piece .cell {
+      position: absolute;
+      width: var(--cell);
+      height: var(--cell);
+      border-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 0 10px rgba(0,0,0,0.2);
+    }
+
+    .piece .cell::after {
+      content: "";
+      position: absolute;
+      inset: 3px auto auto 3px;
+      width: 34%;
+      height: 34%;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.18);
+    }
+
+    .hint {
+      margin: 10px 0 0;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .tetris-shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.9fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .tetris-board-wrap {
+      position: relative;
+    }
+
+    .tetris-canvas {
+      position: absolute;
+      inset: 14px;
+      width: calc(100% - 28px);
+      height: calc(100% - 28px);
+      border-radius: 14px;
+      background: rgba(7, 11, 15, 0.42);
+      image-rendering: pixelated;
+      z-index: 1;
+    }
+
+    .board-badge {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 3;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(8, 12, 16, 0.8);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--accent2);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .tetris-side {
+      display: grid;
+      gap: 14px;
+    }
+
+    .next-preview {
+      margin-top: 14px;
+      min-height: 136px;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+    }
+
+    .next-preview canvas {
+      width: 116px;
+      height: 116px;
+      image-rendering: pixelated;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .control-grid button {
+      width: 100%;
+    }
+
+    #manualBtn {
+      grid-column: span 2;
+    }
+
+    .stack {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .mini-card,
+    .upgrade-card,
+    .research-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: center;
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .mini-card h3,
+    .upgrade-card h3,
+    .research-card h3 {
+      margin: 0;
+      font-size: 1.03rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .mini-card p,
+    .upgrade-card p,
+    .research-card p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .research-card.completed {
+      background: linear-gradient(135deg, rgba(105,223,155,0.12), rgba(255,255,255,0.03));
+    }
+
+    .research-card.locked {
+      opacity: 0.62;
+    }
+
+    .research-status {
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      color: var(--accent2);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .inline-meta {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .inline-meta strong {
+      color: var(--text);
+    }
+
+    .stat-grid,
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .summary-grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .stat-grid > div,
+    .summary-grid > div {
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .stat-grid span,
+    .summary-grid span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.8rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .stat-grid strong,
+    .summary-grid strong {
+      display: block;
+      margin-top: 6px;
+      line-height: 1.35;
+    }
+
+    .stage-box {
+      margin-bottom: 16px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: linear-gradient(135deg, rgba(255,159,28,0.12), rgba(76,201,240,0.08));
+    }
+
+    .stage-box strong {
+      display: block;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .stage-box span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .factory-scene {
+      display: grid;
+      gap: 12px;
+    }
+
+    .workshop-row,
+    .line-row,
+    .machine-row {
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .row-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .row-head strong {
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .row-head span {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .workbench {
+      min-height: 110px;
+      display: grid;
+      place-items: center;
+      position: relative;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px dashed rgba(255,255,255,0.14);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)),
+        linear-gradient(180deg, #1c2731, #131c24);
+    }
+
+    .press-arm {
+      position: relative;
+      width: 160px;
+      height: 74px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #3b4a57, #29343e);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+    }
+
+    .press-arm::before,
+    .press-arm::after {
+      content: "";
+      position: absolute;
+      background: #7d8c97;
+      border-radius: 6px;
+    }
+
+    .press-arm::before {
+      width: 26px;
+      height: 54px;
+      left: 18px;
+      bottom: 10px;
+    }
+
+    .press-arm::after {
+      width: 88px;
+      height: 10px;
+      left: 36px;
+      top: 14px;
+      transform-origin: left center;
+    }
+
+    .press-arm.active::after {
+      animation: hammerPress 0.45s ease;
+    }
+
+    .belt,
+    .stage-lane {
+      position: relative;
+      height: 66px;
+      overflow: hidden;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)),
+        repeating-linear-gradient(90deg, #2c3946 0 22px, #1c2731 22px 44px);
+      box-shadow: inset 0 10px 24px rgba(0,0,0,0.3);
+    }
+
+    .belt.active::before,
+    .stage-lane.active::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(90deg, rgba(255,159,28,0.22) 0 14px, transparent 14px 28px);
+      animation: beltMove 0.72s linear infinite;
+      mix-blend-mode: screen;
+    }
+
+    .line-row.locked {
+      opacity: 0.48;
+      filter: saturate(0.7);
+    }
+
+    .meter {
+      margin-top: 10px;
+      height: 11px;
+      overflow: hidden;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .meter > div {
+      height: 100%;
+      transform-origin: left center;
+      transform: scaleX(0);
+      background: linear-gradient(90deg, var(--cyan), var(--green));
+      box-shadow: 0 0 18px rgba(76,201,240,0.34);
+    }
+
+    .crate,
+    .product {
+      --travel: 320px;
+      --cargoColor: #f77f00;
+      --cargoLight: #ffbf69;
+      position: absolute;
+      left: -70px;
+      top: 10px;
+      width: 54px;
+      height: 44px;
+      border-radius: 12px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 5px;
+      padding: 7px;
+      animation: crateMove 1s cubic-bezier(.24,.68,.3,1) forwards;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.28);
+      border: 1px solid rgba(255,255,255,0.18);
+      background: linear-gradient(180deg, var(--cargoLight), var(--cargoColor));
+    }
+
+    .crate span,
+    .product span {
+      border-radius: 5px;
+      background: rgba(12,18,24,0.28);
+    }
+
+    .spark {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent2);
+      opacity: 0;
+      animation: sparkPop 0.45s ease forwards;
+    }
+
+    .actions-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .subpanel {
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .subpanel h3 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .subpanel p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .debug-input-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .debug-field {
+      display: grid;
+      gap: 6px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .debug-field span {
+      color: var(--muted);
+      font-size: 0.76rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .debug-field input {
+      width: 100%;
+      border: 0;
+      outline: 0;
+      color: var(--text);
+      font: inherit;
+      font-weight: 700;
+      background: rgba(7, 11, 15, 0.6);
+      border-radius: 10px;
+      padding: 10px 12px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+    }
+
+    .micro-note {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+
+    .research-screen {
+      position: relative;
+      min-height: 230px;
+      overflow: hidden;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background:
+        radial-gradient(circle at 50% 50%, rgba(76,201,240,0.12), transparent 42%),
+        linear-gradient(180deg, #12202a, #0d141b);
+      box-shadow: inset 0 10px 30px rgba(0,0,0,0.35);
+    }
+
+    .research-screen::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(transparent 0 46%, rgba(76,201,240,0.08) 50%, transparent 54%),
+        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 100% 100%, 32px 32px, 32px 32px;
+      animation: scanLine 3.2s linear infinite;
+    }
+
+    .lab-node {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 14px rgba(76,201,240,0.45);
+      animation: nodeBlink 2s ease-in-out infinite;
+    }
+
+    .lab-node.orange {
+      background: var(--accent2);
+      box-shadow: 0 0 14px rgba(255,209,102,0.45);
+      animation-delay: -0.6s;
+    }
+
+    .machine-board {
+      position: relative;
+      min-height: 260px;
+      overflow: hidden;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background:
+        radial-gradient(circle at 50% 35%, rgba(255,255,255,0.07), transparent 34%),
+        linear-gradient(180deg, #1a1619, #120e11);
+      box-shadow: inset 0 12px 34px rgba(0,0,0,0.38);
+      isolation: isolate;
+    }
+
+    .machine-board::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.08), transparent 42%),
+        radial-gradient(circle at 50% 0%, rgba(255,255,255,0.1), transparent 30%);
+      opacity: 0.55;
+    }
+
+    .machine-board-circuits {
+      background:
+        radial-gradient(circle at 50% 24%, rgba(255,194,209,0.18), transparent 24%),
+        linear-gradient(180deg, #25171c, #120c10 100%);
+    }
+
+    .machine-board-engines {
+      background:
+        radial-gradient(circle at 50% 18%, rgba(255,166,77,0.24), transparent 24%),
+        linear-gradient(180deg, #23160f, #120b08 100%);
+    }
+
+    .machine-board-cores {
+      background:
+        radial-gradient(circle at 50% 22%, rgba(189,224,254,0.18), transparent 24%),
+        linear-gradient(180deg, #151522, #090b14 100%);
+    }
+
+    .machine-shell {
+      position: absolute;
+      left: 50%;
+      top: 34px;
+      width: 190px;
+      height: 180px;
+      transform: translateX(-50%);
+      border-radius: 30px;
+      background: linear-gradient(180deg, #4f5d68, #2d3841);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+      overflow: hidden;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+    }
+
+    .machine-shell::before {
+      content: "";
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      bottom: 16px;
+      height: 20px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.22);
+    }
+
+    .machine-shell::after {
+      content: "";
+      position: absolute;
+      inset: 16px;
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,0.06);
+      pointer-events: none;
+    }
+
+    .machine-board.active .machine-shell {
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1), 0 0 30px rgba(0,0,0,0.24);
+      filter: saturate(1.08);
+    }
+
+    .machine-board.active .machine-shell-circuits {
+      transform: translateX(-50%) translateY(-2px);
+    }
+
+    .machine-board.active .machine-shell-engines {
+      transform: translateX(-50%) translateY(-3px);
+    }
+
+    .machine-board.active .machine-shell-cores {
+      transform: translateX(-50%);
+    }
+
+    .machine-shell-circuits {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.08), transparent 35%),
+        linear-gradient(180deg, #623844, #26161d 100%);
+    }
+
+    .machine-shell-engines {
+      background:
+        linear-gradient(180deg, rgba(255,221,149,0.14), transparent 32%),
+        linear-gradient(180deg, #5b3a22, #2b180d 100%);
+    }
+
+    .machine-shell-cores {
+      background:
+        radial-gradient(circle at 50% 24%, rgba(155,246,255,0.16), transparent 28%),
+        linear-gradient(180deg, #2b2442, #141127 100%);
+    }
+
+    .machine-glow {
+      position: absolute;
+      left: 50%;
+      top: 28px;
+      width: 96px;
+      height: 96px;
+      transform: translateX(-50%);
+      border-radius: 24px;
+      background: radial-gradient(circle at 50% 50%, var(--stageAccent) 0%, var(--stageColor) 60%, rgba(0,0,0,0.12) 100%);
+      box-shadow: 0 0 24px var(--stageColor);
+      opacity: 0.95;
+      z-index: 2;
+    }
+
+    .machine-glow.pulse {
+      animation: corePulse 0.6s ease;
+    }
+
+    .machine-shell-circuits .machine-glow {
+      top: 54px;
+      width: 84px;
+      height: 56px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #ffd7e1, #ff6f91);
+      box-shadow: 0 0 22px rgba(255,95,133,0.46);
+    }
+
+    .machine-shell-engines .machine-glow {
+      top: 64px;
+      width: 78px;
+      height: 50px;
+      border-radius: 14px;
+      background: radial-gradient(circle at 50% 35%, #ffe29a 0%, #ff8c42 62%, rgba(45,18,5,0.8) 100%);
+      box-shadow: 0 0 24px rgba(255,139,61,0.5);
+    }
+
+    .machine-shell-cores .machine-glow {
+      top: 58px;
+      width: 74px;
+      height: 74px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 50%, #f3f8ff 0%, #9bf6ff 28%, #7f5af0 68%, rgba(10,13,32,0.9) 100%);
+      box-shadow: 0 0 26px rgba(127,90,240,0.5);
+    }
+
+    .assembler-arm,
+    .forge-hammer,
+    .reactor-ring,
+    .reactor-orbit,
+    .assembler-stack,
+    .forge-anvil,
+    .forge-fire {
+      position: absolute;
+      z-index: 1;
+    }
+
+    .assembler-arm {
+      top: 18px;
+      width: 16px;
+      height: 84px;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #9aa8b6, #6d7782);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.16);
+      transform-origin: top center;
+    }
+
+    .assembler-arm::after {
+      content: "";
+      position: absolute;
+      top: 48px;
+      width: 58px;
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #8e98a2, #d2d9de);
+      box-shadow: 0 0 10px rgba(255,255,255,0.08);
+    }
+
+    .assembler-arm-left {
+      left: 28px;
+    }
+
+    .assembler-arm-left::after {
+      left: 10px;
+      transform-origin: left center;
+    }
+
+    .assembler-arm-right {
+      right: 28px;
+    }
+
+    .assembler-arm-right::after {
+      right: 10px;
+      transform-origin: right center;
+    }
+
+    .assembler-stack {
+      left: 50%;
+      bottom: 36px;
+      width: 74px;
+      transform: translateX(-50%);
+      display: grid;
+      gap: 6px;
+    }
+
+    .assembler-stack span {
+      height: 12px;
+      border-radius: 5px;
+      background: linear-gradient(180deg, #f6b0c2, #ff758f);
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+    }
+
+    .machine-board.active .assembler-arm-left {
+      animation: assemblerClampLeft 1.7s ease-in-out infinite;
+    }
+
+    .machine-board.active .assembler-arm-right {
+      animation: assemblerClampRight 1.7s ease-in-out infinite;
+    }
+
+    .machine-board.active .assembler-stack span:nth-child(2) {
+      animation: assemblerStackPulse 1.7s ease-in-out infinite;
+    }
+
+    .forge-fire {
+      left: 50%;
+      bottom: 44px;
+      width: 92px;
+      height: 54px;
+      transform: translateX(-50%);
+      border-radius: 50% 50% 42% 42%;
+      background: radial-gradient(circle at 50% 70%, rgba(255,242,187,0.96), rgba(255,125,46,0.92) 58%, rgba(0,0,0,0) 78%);
+      filter: blur(1px);
+      opacity: 0.82;
+    }
+
+    .forge-anvil {
+      left: 50%;
+      bottom: 34px;
+      width: 86px;
+      height: 18px;
+      transform: translateX(-50%);
+      border-radius: 10px 10px 12px 12px;
+      background: linear-gradient(180deg, #959aa3, #4a4f57);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14);
+    }
+
+    .forge-anvil::after {
+      content: "";
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: -12px;
+      height: 14px;
+      border-radius: 0 0 10px 10px;
+      background: linear-gradient(180deg, #636973, #343a43);
+    }
+
+    .forge-hammer {
+      right: 34px;
+      top: 18px;
+      width: 16px;
+      height: 88px;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #8f7761, #4e3522);
+      transform-origin: top center;
+    }
+
+    .forge-hammer::after {
+      content: "";
+      position: absolute;
+      top: 10px;
+      left: -20px;
+      width: 56px;
+      height: 18px;
+      border-radius: 8px;
+      background: linear-gradient(180deg, #d3b291, #7f5431);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14);
+    }
+
+    .machine-board.active .forge-fire {
+      animation: forgeFireFlicker 0.9s ease-in-out infinite;
+    }
+
+    .machine-board.active .forge-hammer {
+      animation: forgeHammerDrop 1.35s cubic-bezier(.34,.02,.31,1) infinite;
+    }
+
+    .reactor-ring {
+      left: 50%;
+      border-radius: 50%;
+      transform: translateX(-50%);
+      border: 2px solid rgba(255,255,255,0.22);
+      box-shadow: 0 0 16px rgba(155,246,255,0.12);
+      z-index: 1;
+    }
+
+    .reactor-ring.outer {
+      top: 34px;
+      width: 126px;
+      height: 126px;
+      border-color: rgba(155,246,255,0.34);
+    }
+
+    .reactor-ring.inner {
+      top: 56px;
+      width: 82px;
+      height: 82px;
+      border-color: rgba(224,195,252,0.42);
+    }
+
+    .reactor-orbit {
+      left: 50%;
+      top: 32px;
+      width: 130px;
+      height: 130px;
+      transform: translateX(-50%);
+      border-radius: 50%;
+      border: 1px dashed rgba(255,255,255,0.16);
+    }
+
+    .reactor-orbit::after {
+      content: "";
+      position: absolute;
+      top: -5px;
+      left: 50%;
+      width: 11px;
+      height: 11px;
+      margin-left: -5.5px;
+      border-radius: 50%;
+      background: #9bf6ff;
+      box-shadow: 0 0 14px rgba(155,246,255,0.42);
+    }
+
+    .reactor-orbit.b {
+      top: 46px;
+      width: 102px;
+      height: 102px;
+      border-color: rgba(224,195,252,0.18);
+    }
+
+    .reactor-orbit.b::after {
+      background: #e0c3fc;
+      box-shadow: 0 0 14px rgba(224,195,252,0.38);
+    }
+
+    .machine-board.active .machine-shell-cores .machine-glow {
+      animation: reactorCoreHum 1.7s ease-in-out infinite;
+    }
+
+    .machine-board.active .reactor-orbit.a {
+      animation: reactorSpin 3.4s linear infinite;
+    }
+
+    .machine-board.active .reactor-orbit.b {
+      animation: reactorSpinReverse 2.5s linear infinite;
+    }
+
+    .machine-board .stage-lane {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 22px;
+      height: 58px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      max-width: 340px;
+      padding: 12px 16px;
+      border-radius: 14px;
+      background: rgba(10,15,20,0.94);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      pointer-events: none;
+      z-index: 40;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @keyframes pieceDrop {
+      from { transform: translateY(0) rotate(0deg); opacity: 1; }
+      82% { opacity: 1; }
+      to { transform: translateY(var(--travel)) rotate(var(--spin)); opacity: 0; }
+    }
+
+    @keyframes lineFlash {
+      0% { opacity: 0; transform: scaleX(0.35); }
+      35% { opacity: 1; }
+      100% { opacity: 0; transform: scaleX(1.08); }
+    }
+
+    @keyframes beltMove {
+      from { background-position: 0 0; }
+      to { background-position: 110px 0; }
+    }
+
+    @keyframes crateMove {
+      from { transform: translateX(0) scale(0.94); opacity: 0.2; }
+      15% { opacity: 1; }
+      to { transform: translateX(var(--travel)) scale(1); opacity: 0; }
+    }
+
+    @keyframes hammerPress {
+      0% { transform: rotate(0deg); }
+      45% { transform: rotate(24deg); }
+      100% { transform: rotate(0deg); }
+    }
+
+    @keyframes sparkPop {
+      0% { transform: scale(0.2); opacity: 0; }
+      35% { opacity: 1; }
+      100% { transform: translateY(-22px) scale(1.2); opacity: 0; }
+    }
+
+    @keyframes scanLine {
+      0% { background-position: 0 -120%, 0 0, 0 0; }
+      100% { background-position: 0 160%, 0 0, 0 0; }
+    }
+
+    @keyframes nodeBlink {
+      0%, 100% { transform: scale(0.85); opacity: 0.55; }
+      50% { transform: scale(1.15); opacity: 1; }
+    }
+
+    @keyframes corePulse {
+      0% { transform: translateX(-50%) scale(0.92); box-shadow: 0 0 8px var(--stageColor); }
+      50% { transform: translateX(-50%) scale(1.08); box-shadow: 0 0 30px var(--stageColor); }
+      100% { transform: translateX(-50%) scale(1); box-shadow: 0 0 24px var(--stageColor); }
+    }
+
+    @keyframes assemblerClampLeft {
+      0%, 100% { transform: rotate(0deg); }
+      35% { transform: rotate(12deg); }
+      65% { transform: rotate(4deg); }
+    }
+
+    @keyframes assemblerClampRight {
+      0%, 100% { transform: rotate(0deg); }
+      35% { transform: rotate(-12deg); }
+      65% { transform: rotate(-4deg); }
+    }
+
+    @keyframes assemblerStackPulse {
+      0%, 100% { transform: scaleX(1); filter: brightness(1); }
+      45% { transform: scaleX(1.08); filter: brightness(1.12); }
+    }
+
+    @keyframes forgeHammerDrop {
+      0%, 100% { transform: rotate(0deg); }
+      34% { transform: rotate(18deg); }
+      48% { transform: rotate(42deg); }
+      62% { transform: rotate(10deg); }
+    }
+
+    @keyframes forgeFireFlicker {
+      0%, 100% { transform: translateX(-50%) scale(0.96, 0.94); opacity: 0.8; }
+      45% { transform: translateX(-50%) scale(1.06, 1.12); opacity: 1; }
+      70% { transform: translateX(-50%) scale(1, 0.98); opacity: 0.9; }
+    }
+
+    @keyframes reactorCoreHum {
+      0%, 100% { transform: translateX(-50%) scale(0.96); box-shadow: 0 0 24px rgba(127,90,240,0.46); }
+      50% { transform: translateX(-50%) scale(1.08); box-shadow: 0 0 34px rgba(155,246,255,0.52); }
+    }
+
+    @keyframes reactorSpin {
+      from { transform: translateX(-50%) rotate(0deg); }
+      to { transform: translateX(-50%) rotate(360deg); }
+    }
+
+    @keyframes reactorSpinReverse {
+      from { transform: translateX(-50%) rotate(360deg); }
+      to { transform: translateX(-50%) rotate(0deg); }
+    }
+
+    @media (max-width: 960px) {
+      .tetris-shell,
+      .layout,
+      .stat-grid,
+      .summary-grid,
+      .summary-grid.three,
+      .debug-input-grid,
+      .actions-row,
+      .mini-card,
+      .upgrade-card,
+      .research-card {
+        grid-template-columns: 1fr;
+      }
+
+      .manual-board {
+        min-height: 460px;
+      }
+
+      .ai-board {
+        height: 320px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand-row">
+        <div class="brand">
+          <h1>Tetromill Industries</h1>
+          <p>ScrapをTetrisで回収し、IngotsからParts、Modules、Engines、Coresまで育てる工業インクリメンタル。</p>
+        </div>
+        <div class="topbar-actions">
+          <button id="debugToggleBtn" class="toggle-btn">DEBUG: OFF</button>
+          <button id="soundToggleBtn" class="toggle-btn on">SE: ON</button>
+        </div>
+      </div>
+
+      <div class="resource-row">
+        <div class="resource cash"><span>$G</span><strong id="moneyValue">0</strong></div>
+        <div class="resource scrap"><span>Scrap</span><strong id="scrapValue">0</strong></div>
+        <div class="resource parts"><span>Ingots</span><strong id="partsValue">0</strong></div>
+        <div class="resource modules"><span>Parts</span><strong id="modulesValue">0</strong></div>
+        <div class="resource circuits"><span>Modules</span><strong id="circuitsValue">0</strong></div>
+        <div class="resource engines"><span>Engines</span><strong id="enginesValue">0</strong></div>
+        <div class="resource cores"><span>Cores</span><strong id="coresValue">0</strong></div>
+      </div>
+
+      <div class="tabs" id="tabsBar">
+        <button class="tab-btn active" data-tab="tetris">Tetris</button>
+        <button class="tab-btn" data-tab="factory">Factory</button>
+        <button class="tab-btn" data-tab="research">Research</button>
+        <button class="tab-btn" data-tab="stats">Stats</button>
+        <button class="tab-btn" data-tab="ascension">Ascension</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <section id="tab-tetris" class="tab-panel active">
+        <div class="layout">
+          <div class="card">
+            <div class="section-head">
+              <div>
+                <h2>Scrap Stack</h2>
+                <p>本物のライン消去でScrapを回収します。掘ったScrapは精錬タブでIngotsに変え、そこから工業チェーンを伸ばします。</p>
+              </div>
+            </div>
+
+            <div class="tetris-shell">
+              <div id="manualBoard" class="board manual-board">
+                <canvas id="manualCanvas" class="tetris-canvas" width="300" height="600"></canvas>
+                <div class="line-flash"></div>
+                <div id="stackStateText" class="board-badge">LIVE</div>
+              </div>
+
+              <div class="tetris-side">
+                <div class="subpanel">
+                  <h3>Stack Telemetry</h3>
+                  <p>盤面はTetrisタブを開いている間だけ進みます。研究や工場を見るときに勝手に崩れません。</p>
+                  <div class="stat-grid" style="margin-top:12px;">
+                    <div><span>Lines</span><strong id="manualLinesValue">0</strong></div>
+                    <div><span>Streak</span><strong id="streakValue">0</strong></div>
+                    <div><span>Next</span><strong id="nextPieceText">-</strong></div>
+                    <div><span>Drop</span><strong id="dropModeText">0.85s</strong></div>
+                  </div>
+                  <div class="next-preview">
+                    <canvas id="nextCanvas" width="120" height="120"></canvas>
+                  </div>
+                </div>
+
+                <div class="subpanel">
+                  <h3>Controls</h3>
+                  <p>← → 移動 / ↑ 回転 / ↓ ソフトドロップ / Space ハードドロップ</p>
+                  <div class="control-grid">
+                    <button id="moveLeftBtn" class="ghost-btn">←</button>
+                    <button id="rotateBtn" class="ghost-btn">⟳</button>
+                    <button id="moveRightBtn" class="ghost-btn">→</button>
+                    <button id="softDropBtn" class="ghost-btn">↓</button>
+                    <button id="manualBtn" class="action-btn secondary">ハードドロップ</button>
+                    <button id="resetStackBtn" class="ghost-btn">盤面リセット</button>
+                  </div>
+                </div>
+
+                <div id="debugPanel" class="subpanel" hidden>
+                  <h3>Debug Bay</h3>
+                  <p>F2で切り替え。追加量は下の入力値から変更できます。</p>
+                  <div class="stat-grid" style="margin-top:12px;">
+                    <div><span>Active</span><strong id="debugActivePiece">-</strong></div>
+                    <div><span>Next</span><strong id="debugNextPiece">-</strong></div>
+                    <div><span>Bag</span><strong id="debugBagSize">0</strong></div>
+                    <div><span>AI Bots</span><strong id="debugAiBots">0</strong></div>
+                  </div>
+                  <div class="debug-input-grid">
+                    <label class="debug-field"><span>Scrap</span><input id="debugScrapInput" type="number" min="1" step="1" value="200" /></label>
+                    <label class="debug-field"><span>Ingots</span><input id="debugIngotInput" type="number" min="1" step="1" value="20" /></label>
+                    <label class="debug-field"><span>$G</span><input id="debugMoneyInput" type="number" min="1" step="1" value="500" /></label>
+                    <label class="debug-field"><span>AI Bots</span><input id="debugBotInput" type="number" min="1" step="1" value="1" /></label>
+                    <label class="debug-field"><span>Smelter Lines</span><input id="debugSmelterLineInput" type="number" min="1" step="1" value="5" /></label>
+                    <label class="debug-field"><span>Legacy Cores</span><input id="debugLegacyInput" type="number" min="1" step="1" value="1" /></label>
+                  </div>
+                  <div class="actions-row" style="margin-top:12px;">
+                    <button id="debugScrapBtn" class="ghost-btn">Scrap追加</button>
+                    <button id="debugIngotBtn" class="ghost-btn">Ingots追加</button>
+                    <button id="debugMoneyBtn" class="ghost-btn">$G追加</button>
+                    <button id="debugResearchBtn" class="ghost-btn">研究全解放</button>
+                    <button id="debugBotBtn" class="ghost-btn">AI Bot追加</button>
+                    <button id="debugSmelterLineBtn" class="ghost-btn">ライン追加</button>
+                    <button id="debugLegacyBtn" class="ghost-btn">Legacy追加</button>
+                    <button id="debugForceIBtn" class="ghost-btn">次をIミノ</button>
+                    <button id="debugResetBtn" class="ghost-btn">盤面リセット</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p class="hint">
+              <span id="manualYieldText">1 line = 2 Scrap</span><br />
+              <span id="comboText">Combo未強化</span>
+            </p>
+
+            <div class="stack">
+              <div class="upgrade-card">
+                <div>
+                  <h3>Manual Harvest Lv.<span id="manualHarvestLv">0</span></h3>
+                  <p>手動ライン消去で得られるScrapを増やします。</p>
+                </div>
+                <button id="manualHarvestBtn" class="shop-btn">
+                  <span>強化</span>
+                  <small id="manualHarvestCost">12 Scrap</small>
+                </button>
+              </div>
+
+              <div class="upgrade-card">
+                <div>
+                  <h3>Salvage Combo Lv.<span id="comboLv">0</span></h3>
+                  <p>一定確率で追加Scrapが発生します。</p>
+                </div>
+                <button id="comboBtn" class="shop-btn">
+                  <span>強化</span>
+                  <small id="comboCost">5 Parts</small>
+                </button>
+              </div>
+
+              <div class="upgrade-card">
+                <div>
+                  <h3>Salvage Drones Lv.<span id="droneLv">0</span></h3>
+                  <p>すべてのScrap採掘量を底上げする資金型アップグレードです。</p>
+                </div>
+                <button id="droneBtn" class="shop-btn">
+                  <span>導入</span>
+                  <small id="droneCost">$120 / 6 Parts</small>
+                </button>
+              </div>
+
+              <div class="mini-card">
+                <div>
+                  <h3>Stacking Scripts</h3>
+                  <p id="aiGateText">Researchで「Stacking Scripts」を完了するとAIスタッカーを購入できます。</p>
+                </div>
+                <button id="buyBotBtn" class="shop-btn">
+                  <span>AIスタッカー購入</span>
+                  <small id="buyBotCost">$90</small>
+                </button>
+              </div>
+
+              <div class="upgrade-card">
+                <div>
+                  <h3>AI Yield Lv.<span id="aiYieldLv">0</span></h3>
+                  <p>AIスタッカー1回あたりのScrap回収量を増やします。</p>
+                </div>
+                <button id="aiYieldBtn" class="shop-btn">
+                  <span>強化</span>
+                  <small id="aiYieldCost">$140 / 8 Parts</small>
+                </button>
+              </div>
+
+              <div class="upgrade-card">
+                <div>
+                  <h3>AI Speed Lv.<span id="aiSpeedLv">0</span></h3>
+                  <p>AIの処理頻度を上げて秒間生産量を伸ばします。</p>
+                </div>
+                <button id="aiSpeedBtn" class="shop-btn">
+                  <span>強化</span>
+                  <small id="aiSpeedCost">$160 / 10 Parts</small>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-head">
+              <div>
+                <h2>AI Salvage Board</h2>
+                <p>解禁後、AIスタッカーが自動でラインを崩し、Scrapだけを掘り続けます。</p>
+              </div>
+              <div class="status-pill" id="aiStatus">AI未解禁</div>
+            </div>
+
+            <div id="aiBoard" class="board ai-board">
+              <div class="line-flash"></div>
+            </div>
+
+            <div class="stack">
+              <div class="stat-grid">
+                <div><span>AI Bots</span><strong id="aiBotsValue">0</strong></div>
+                <div><span>Output</span><strong id="aiOutputText">0 Scrap/s</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-factory" class="tab-panel">
+        <div class="layout">
+          <div class="card">
+              <div class="section-head">
+                <div>
+                <h2>Smelter Yard</h2>
+                <p>手作業の精錬炉から増築された自動製錬ラインへ。ここでScrapをIngots化し、最初の資本を稼ぎます。</p>
+              </div>
+              <div class="status-pill" id="factoryStatus">手動工房</div>
+            </div>
+
+            <div class="stage-box">
+              <strong id="factoryStageName">Stage 1: Hand Smelter</strong>
+              <span id="factoryStageText">まだ小さな炉だけです。Scrapを手動で精錬してIngotsを作り、売却と研究の足場を作ります。</span>
+            </div>
+
+            <div class="factory-scene">
+              <div class="workshop-row">
+                <div class="row-head">
+                  <strong>Manual Smelter</strong>
+                  <span id="manualRecipeText">4 Scrap → 1 Ingots</span>
+                </div>
+                <div class="workbench" id="workbench">
+                  <div id="pressArm" class="press-arm"></div>
+                </div>
+              </div>
+
+              <div id="line1Wrap" class="line-row locked">
+                <div class="row-head">
+                  <strong>Auto Smelter 1</strong>
+                  <span id="line1Label">研究待ち</span>
+                </div>
+                <div id="line1Belt" class="belt"></div>
+                <div class="meter"><div id="line1Meter"></div></div>
+              </div>
+
+              <div id="line2Wrap" class="line-row locked">
+                <div class="row-head">
+                  <strong>Auto Smelter 2</strong>
+                  <span id="line2Label">研究待ち</span>
+                </div>
+                <div id="line2Belt" class="belt"></div>
+                <div class="meter"><div id="line2Meter"></div></div>
+              </div>
+
+              <div id="line3Wrap" class="line-row locked">
+                <div class="row-head">
+                  <strong>Auto Smelter 3</strong>
+                  <span id="line3Label">研究待ち</span>
+                </div>
+                <div id="line3Belt" class="belt"></div>
+                <div class="meter"><div id="line3Meter"></div></div>
+              </div>
+
+              <div id="line4Wrap" class="line-row locked">
+                <div class="row-head">
+                  <strong>Auto Smelter 4</strong>
+                  <span id="line4Label">研究待ち</span>
+                </div>
+                <div id="line4Belt" class="belt"></div>
+                <div class="meter"><div id="line4Meter"></div></div>
+              </div>
+            </div>
+
+            <div class="summary-grid three" style="margin-top:16px;">
+              <div><span>Factory Mode</span><strong id="factoryModeText">Manual Only</strong></div>
+              <div><span>Auto Lines</span><strong id="lineCountValue">0</strong></div>
+              <div><span>Auto Output</span><strong id="autoOutputText">0 Ingots/s</strong></div>
+            </div>
+            <p id="smelterPreviewText" class="micro-note">監視表示は先頭4ラインまでです。追加ラインは集計処理で稼働します。</p>
+          </div>
+
+          <div class="card">
+            <div class="section-head">
+              <div>
+                <h2>Smelting & Capital</h2>
+                <p>まずは精錬品を売って現金化し、その資金とIngotsで次工程と自動化へ進みます。</p>
+              </div>
+            </div>
+
+            <div class="stack">
+              <div class="subpanel">
+                <h3>Manual Smelting</h3>
+                <p>Scrapを手で精錬してIngotsを作ります。</p>
+                <div class="inline-meta">
+                  <span>Recipe: <strong id="manualRecipeInline">4 Scrap → 1 Ingots</strong></span>
+                </div>
+                <div style="margin-top:12px;">
+                  <button id="manualPartBtn" class="action-btn secondary">手動で精錬する</button>
+                </div>
+              </div>
+
+              <div class="subpanel">
+                <h3>Ingots Sales</h3>
+                <p>精錬したIngotsを売却して$Gへ変えます。</p>
+                <div class="inline-meta">
+                  <span>Price: <strong id="partSellText">1 Ingots = $10</strong></span>
+                </div>
+                <div class="actions-row" style="margin-top:12px;">
+                  <button id="sellPartBtn" class="ghost-btn">1個売る</button>
+                  <button id="sellAllPartsBtn" class="ghost-btn">全部売る</button>
+                </div>
+                <div style="margin-top:10px;">
+                  <button id="autoSellPartsBtn" class="toggle-btn" hidden>Auto Sell Ingots: OFF</button>
+                </div>
+              </div>
+
+              <div class="upgrade-card">
+                <div>
+                  <h3>Furnace Lining Lv.<span id="workshopLv">0</span></h3>
+                  <p>手動精錬効率を高め、より少ないScrapでより多くのIngotsを作ります。</p>
+                </div>
+                <button id="workshopBtn" class="shop-btn">
+                  <span>強化</span>
+                  <small id="workshopCost">$80 / 6 Parts</small>
+                </button>
+              </div>
+
+              <div class="upgrade-card">
+                <div>
+                  <h3>Build New Line</h3>
+                  <p id="automationNote">Smelter Automation研究後に、高額投資で自動製錬ラインを増築できます。</p>
+                </div>
+                <button id="buildLineBtn" class="shop-btn">
+                  <span>増築</span>
+                  <small id="buildLineCost">$180 / 14 Parts</small>
+                </button>
+              </div>
+
+              <div class="upgrade-card">
+                <div>
+                  <h3>Conveyor Speed Lv.<span id="conveyorLv">0</span></h3>
+                  <p>自動製錬ラインの処理サイクルを短縮します。</p>
+                </div>
+                <button id="conveyorBtn" class="shop-btn">
+                  <span>強化</span>
+                  <small id="conveyorCost">$120 / 10 Parts</small>
+                </button>
+              </div>
+
+              <div class="upgrade-card">
+                <div>
+                  <h3>Line Efficiency Lv.<span id="efficiencyLv">0</span></h3>
+                  <p>自動製錬ラインが必要とするScrap量を下げます。</p>
+                </div>
+                <button id="efficiencyBtn" class="shop-btn">
+                  <span>強化</span>
+                  <small id="efficiencyCost">$140 / 12 Parts</small>
+                </button>
+              </div>
+
+              <div class="upgrade-card">
+                <div>
+                  <h3>Power Grid Lv.<span id="gridLv">0</span></h3>
+                  <p>すべての自動設備の稼働速度をまとめて底上げします。</p>
+                </div>
+                <button id="gridBtn" class="shop-btn">
+                  <span>増強</span>
+                  <small id="gridCost">$200 / 8 Parts</small>
+                </button>
+              </div>
+
+              <div class="upgrade-card">
+                <div>
+                  <h3>Market Analytics Lv.<span id="marketLv">0</span></h3>
+                  <p>すべての売却価格にボーナスをかけます。</p>
+                </div>
+                <button id="marketBtn" class="shop-btn">
+                  <span>投資</span>
+                  <small id="marketCost">$220 / 6 Parts</small>
+                </button>
+              </div>
+
+              <div class="upgrade-card">
+                <div>
+                  <h3>Contract Desk Lv.<span id="contractLv">0</span></h3>
+                  <p>一括売却と自動売却の利益率を高めます。</p>
+                </div>
+                <button id="contractBtn" class="shop-btn">
+                  <span>契約</span>
+                  <small id="contractCost">$260 / 7 Parts</small>
+                </button>
+              </div>
+
+              <div class="summary-grid">
+                <div><span>Auto Recipe</span><strong id="autoRecipeText">研究で解禁</strong></div>
+                <div><span>Ingot Stock</span><strong id="partStockText">0</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-research" class="tab-panel">
+        <div class="layout">
+          <div class="card">
+            <div class="section-head">
+              <div>
+                <h2>Research Lab</h2>
+                <p>自動化、新工程、物流、自動売却を順番に解禁し、工場のレイヤーを増やしていきます。</p>
+              </div>
+              <div class="status-pill" id="researchCountText">0 / 8 完了</div>
+            </div>
+
+            <div class="research-screen">
+              <div class="lab-node" style="left:16%; top:26%;"></div>
+              <div class="lab-node orange" style="left:54%; top:18%;"></div>
+              <div class="lab-node" style="left:72%; top:44%;"></div>
+              <div class="lab-node orange" style="left:34%; top:63%;"></div>
+              <div class="lab-node" style="left:62%; top:72%;"></div>
+            </div>
+
+            <div class="stage-box" style="margin-top:16px;">
+              <strong>Research Roadmap</strong>
+              <span id="roadmapText">まずはTrade DeskとStacking Scriptsで売却と採掘を安定させるのが近道です。</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-head">
+              <div>
+                <h2>Projects</h2>
+                <p>研究完了ごとに新タブと新しい自動ラインが解禁されます。</p>
+              </div>
+            </div>
+            <div id="researchCards" class="stack"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-stats" class="tab-panel">
+        <div class="layout">
+          <div class="card">
+            <div class="section-head">
+              <div>
+                <h2>Current Run</h2>
+                <p>今回の周回でどれだけ積み上げたかを確認できます。</p>
+              </div>
+              <div class="status-pill" id="runPlayTime">0s</div>
+            </div>
+            <div class="summary-grid three">
+              <div><span>Manual Lines</span><strong id="runManualLinesStat">0</strong></div>
+              <div><span>Scrap Mined</span><strong id="runScrapStat">0</strong></div>
+              <div><span>Money Earned</span><strong id="runMoneyStat">$0</strong></div>
+              <div><span>Ingots Made</span><strong id="runIngotsStat">0</strong></div>
+              <div><span>Parts Made</span><strong id="runPartsStat">0</strong></div>
+              <div><span>Modules Made</span><strong id="runModulesStat">0</strong></div>
+              <div><span>Engines Made</span><strong id="runEnginesStat">0</strong></div>
+              <div><span>Cores Made</span><strong id="runCoresStat">0</strong></div>
+              <div><span>Research Done</span><strong id="runResearchStat">0</strong></div>
+              <div><span>Smelter Lines</span><strong id="runSmelterStat">0</strong></div>
+              <div><span>Factory Lines</span><strong id="runFactoryLinesStat">0</strong></div>
+              <div><span>Money Spent</span><strong id="runSpendStat">$0</strong></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-head">
+              <div>
+                <h2>Lifetime</h2>
+                <p>転生をまたいで積み上がる累計統計です。</p>
+              </div>
+              <div class="status-pill" id="lifetimePlayTime">0s</div>
+            </div>
+            <div class="summary-grid three">
+              <div><span>Total Lines</span><strong id="totalManualLinesStat">0</strong></div>
+              <div><span>Total Scrap</span><strong id="totalScrapStat">0</strong></div>
+              <div><span>Total Money</span><strong id="totalMoneyStat">$0</strong></div>
+              <div><span>Total Ingots</span><strong id="totalIngotsStat">0</strong></div>
+              <div><span>Total Parts</span><strong id="totalPartsStat">0</strong></div>
+              <div><span>Total Modules</span><strong id="totalModulesStat">0</strong></div>
+              <div><span>Total Engines</span><strong id="totalEnginesStat">0</strong></div>
+              <div><span>Total Cores</span><strong id="totalCoresStat">0</strong></div>
+              <div><span>Prestiges</span><strong id="totalPrestigeStat">0</strong></div>
+              <div><span>Legacy Earned</span><strong id="totalLegacyStat">0</strong></div>
+              <div><span>Peak Money</span><strong id="peakMoneyStat">$0</strong></div>
+              <div><span>Peak Smelters</span><strong id="peakSmelterStat">0</strong></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-ascension" class="tab-panel">
+        <div class="layout">
+          <div class="card">
+            <div class="section-head">
+              <div>
+                <h2>Legacy Foundry</h2>
+                <p>Coresと高級ラインの勢いを圧縮し、次の周回へ恒久ボーナスとして持ち越します。</p>
+              </div>
+              <div class="status-pill" id="prestigeStatusText">準備中</div>
+            </div>
+
+            <div class="stage-box">
+              <strong>Legacy Cores</strong>
+              <span id="legacyCoresValue">0</span>
+            </div>
+
+            <div class="summary-grid three">
+              <div><span>Output Bonus</span><strong id="legacyOutputBonus">+0%</strong></div>
+              <div><span>Sell Bonus</span><strong id="legacySellBonus">+0%</strong></div>
+              <div><span>Start Cache</span><strong id="legacyStartCache">0 Scrap / $0</strong></div>
+            </div>
+
+            <div class="subpanel" style="margin-top:16px;">
+              <h3>Transcend</h3>
+              <p id="prestigeRequirementText">まずはCore生産を進めて転生可能量を貯めます。</p>
+              <div class="inline-meta">
+                <span>Gain: <strong id="prestigeGainText">+0 Legacy Cores</strong></span>
+                <span>Run Cores: <strong id="prestigeRunCoreText">0</strong></span>
+              </div>
+              <div style="margin-top:12px;">
+                <button id="prestigeBtn" class="action-btn">転生してLegacyを獲得</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-head">
+              <div>
+                <h2>Ascension Log</h2>
+                <p>転生ループの進行状況と、現周回の到達点をまとめています。</p>
+              </div>
+            </div>
+
+            <div class="summary-grid three">
+              <div><span>Total Prestiges</span><strong id="prestigeRunsText">0</strong></div>
+              <div><span>Legacy Earned</span><strong id="prestigeLifetimeText">0</strong></div>
+              <div><span>Best Core Stock</span><strong id="prestigeBestText">0</strong></div>
+            </div>
+
+            <div class="stack">
+              <div class="subpanel">
+                <h3>Loop Notes</h3>
+                <p>転生すると資源、研究、通常アップグレード、ライン数は初期化されます。Legacy Coresと累計統計は維持されます。</p>
+              </div>
+              <div class="subpanel">
+                <h3>Hint</h3>
+                <p>Core生産と市場倍率を伸ばしてから転生すると、次周の立ち上がりがかなり速くなります。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div id="advancedPanels"></div>
+    </main>
+
+    <div id="toast" class="toast" aria-live="polite"></div>
+  </div>
+
+  <script>
+    (() => {
+      const $ = (id) => document.getElementById(id);
+
+      const stageConfigs = [
+        {
+          key: "modules",
+          tab: "machine-shop",
+          label: "Machine Shop",
+          title: "Machine Shop",
+          desc: "Ingotsを切削してPartsへ加工し、次工程へつなぐ量産の入口を作ります。",
+          researchKey: "metallurgy",
+          input: "parts",
+          output: "modules",
+          inputLabel: "Ingots",
+          outputLabel: "Parts",
+          recipe: 3,
+          sellBase: 36,
+          valueStep: 8,
+          installLabel: "Auto Lathe",
+          installCost: { money: 260, parts: 22 },
+          speedMoneyBase: 120,
+          speedMoneyStep: 110,
+          speedResBase: 4,
+          speedResStep: 3,
+          valueMoneyBase: 90,
+          valueMoneyStep: 90,
+          valueResBase: 3,
+          valueResStep: 2,
+          yieldMoneyBase: 140,
+          yieldMoneyStep: 120,
+          yieldResBase: 5,
+          yieldResStep: 3,
+          cycleBase: 5.0,
+          cycleMin: 2.0,
+          cycleStep: 0.4,
+          yieldStep: 0.12,
+          color: "#ff7b54",
+          accent: "#ffd6a5",
+          names: ["Stage 1: Bench Lathe", "Stage 2: Tool Cell", "Stage 3: Machine Hall"],
+          texts: [
+            "まずは卓上旋盤で手加工します。ここでIngotsをPartsへ変え、機械工業の土台を作ります。",
+            "自動切削機が動き始めました。Ingots供給が安定すると一気に工場らしくなります。",
+            "大型工作ホールへ成長しました。Partsの安定量産で次の組立工程が見えてきます。"
+          ]
+        },
+        {
+          key: "circuits",
+          tab: "assembly",
+          label: "Assembly",
+          title: "Assembly",
+          desc: "Partsを束ねてModulesへ組み上げ、中間材の価値を一段引き上げます。",
+          researchKey: "micro",
+          input: "modules",
+          output: "circuits",
+          inputLabel: "Parts",
+          outputLabel: "Modules",
+          recipe: 3,
+          sellBase: 96,
+          valueStep: 18,
+          installLabel: "Auto Assembler",
+          installCost: { money: 440, modules: 18 },
+          speedMoneyBase: 180,
+          speedMoneyStep: 140,
+          speedResBase: 4,
+          speedResStep: 3,
+          valueMoneyBase: 150,
+          valueMoneyStep: 110,
+          valueResBase: 3,
+          valueResStep: 2,
+          yieldMoneyBase: 200,
+          yieldMoneyStep: 150,
+          yieldResBase: 4,
+          yieldResStep: 3,
+          cycleBase: 6.0,
+          cycleMin: 2.4,
+          cycleStep: 0.45,
+          yieldStep: 0.12,
+          color: "#ff5d73",
+          accent: "#ffc2d1",
+          processSound: "assemble",
+          installSound: "assembleBuild",
+          names: ["Stage 1: Rivet Bench", "Stage 2: Assembly Cell", "Stage 3: Module Plant"],
+          texts: [
+            "組立工程の第一歩です。まずは手作業でPartsをModulesへ束ねます。",
+            "自動組立セルが稼働し、Partsの高付加価値化が始まります。",
+            "量産向けの組立棟へ発展し、Modulesが収益の柱になります。"
+          ]
+        },
+        {
+          key: "engines",
+          tab: "forge",
+          label: "Forge",
+          title: "Forge",
+          desc: "Modulesを大型駆動ユニットEnginesへ統合し、重工業ゾーンへ進みます。",
+          researchKey: "heavy",
+          input: "circuits",
+          output: "engines",
+          inputLabel: "Modules",
+          outputLabel: "Engines",
+          recipe: 3,
+          sellBase: 260,
+          valueStep: 40,
+          installLabel: "Auto Forge",
+          installCost: { money: 680, circuits: 15 },
+          speedMoneyBase: 240,
+          speedMoneyStep: 180,
+          speedResBase: 4,
+          speedResStep: 3,
+          valueMoneyBase: 220,
+          valueMoneyStep: 160,
+          valueResBase: 3,
+          valueResStep: 2,
+          yieldMoneyBase: 280,
+          yieldMoneyStep: 190,
+          yieldResBase: 4,
+          yieldResStep: 3,
+          cycleBase: 7.0,
+          cycleMin: 2.8,
+          cycleStep: 0.5,
+          yieldStep: 0.11,
+          color: "#ff9f1c",
+          accent: "#ffd27d",
+          processSound: "forge",
+          installSound: "forgeBuild",
+          names: ["Stage 1: Heavy Forge", "Stage 2: Drive Hall", "Stage 3: Engine Complex"],
+          texts: [
+            "大型ユニット製造の開始地点です。手動統合でも売値が大きく跳ね上がります。",
+            "自動鍛造ラインが稼働し、Modulesが駆動ユニットへ変換されます。",
+            "本格的な重工業複合施設です。大量のModulesを高利益のEnginesへ押し上げます。"
+          ]
+        },
+        {
+          key: "cores",
+          tab: "core-lab",
+          label: "Core Lab",
+          title: "Core Lab",
+          desc: "Enginesを最終高級商品Coresへ変換します。",
+          researchKey: "core",
+          input: "engines",
+          output: "cores",
+          inputLabel: "Engines",
+          outputLabel: "Cores",
+          recipe: 2,
+          sellBase: 760,
+          valueStep: 120,
+          installLabel: "Core Reactor",
+          installCost: { money: 980, engines: 10 },
+          speedMoneyBase: 320,
+          speedMoneyStep: 220,
+          speedResBase: 3,
+          speedResStep: 2,
+          valueMoneyBase: 280,
+          valueMoneyStep: 180,
+          valueResBase: 2,
+          valueResStep: 2,
+          yieldMoneyBase: 360,
+          yieldMoneyStep: 240,
+          yieldResBase: 3,
+          yieldResStep: 2,
+          cycleBase: 8.0,
+          cycleMin: 3.0,
+          cycleStep: 0.55,
+          yieldStep: 0.1,
+          color: "#7f5af0",
+          accent: "#9bf6ff",
+          processSound: "reactor",
+          installSound: "reactorBuild",
+          names: ["Stage 1: Prototype Core", "Stage 2: Core Chamber", "Stage 3: Nexus Reactor"],
+          texts: [
+            "最終製品の試作段階です。数は少なくても売値は突出しています。",
+            "反応炉が立ち上がり、最終高級商品を自動生産できるようになります。",
+            "工場群の頂点となる高収益設備です。Coresが資本循環を一気に加速させます。"
+          ]
+        }
+      ];
+
+      const researchConfigs = [
+        { key: "trade", title: "Trade Desk", desc: "全売却価格に基礎ボーナスを付けます。", cost: { money: 80, parts: 5 }, prereq: [] },
+        { key: "scripts", title: "Stacking Scripts", desc: "TetrisタブでAIスタッカーを購入可能にします。", cost: { money: 100, parts: 8 }, prereq: [] },
+        { key: "automation", title: "Smelter Automation", desc: "高コストの自動製錬ライン増築を解禁します。", cost: { money: 260, parts: 22 }, prereq: ["trade"] },
+        { key: "metallurgy", title: "Precision Machining", desc: "Machine Shopタブを解禁し、Ingots→Parts加工を開きます。", cost: { money: 340, parts: 26 }, prereq: ["automation"] },
+        { key: "micro", title: "Modular Design", desc: "Assemblyタブを解禁し、Parts→Modules加工を開きます。", cost: { money: 480, modules: 14 }, prereq: ["metallurgy"] },
+        { key: "heavy", title: "Heavy Powertrain", desc: "Forgeタブを解禁し、Modules→Engines加工を開きます。", cost: { money: 680, circuits: 16 }, prereq: ["micro"] },
+        { key: "core", title: "Core Architecture", desc: "Core Labタブを解禁し、Engines→Cores加工を開きます。", cost: { money: 920, engines: 12 }, prereq: ["heavy"] },
+        { key: "logistics", title: "Logistics Network", desc: "各素材の自動売却トグルを解禁します。", cost: { money: 1200, cores: 6 }, prereq: ["core"] }
+      ];
+
+      const stageState = {};
+      const stageEls = {};
+      const stageAccumulators = {};
+
+      function createResearchState() {
+        return researchConfigs.reduce((acc, item) => {
+          acc[item.key] = false;
+          return acc;
+        }, {});
+      }
+
+      function createAutoSellState() {
+        return {
+          parts: false,
+          modules: false,
+          circuits: false,
+          engines: false,
+          cores: false
+        };
+      }
+
+      function createStatsBlock() {
+        return {
+          playSeconds: 0,
+          manualLines: 0,
+          scrapMined: 0,
+          moneyEarned: 0,
+          moneySpent: 0,
+          ingotsMade: 0,
+          partsMade: 0,
+          modulesMade: 0,
+          enginesMade: 0,
+          coresMade: 0,
+          researchDone: 0,
+          smelterLinesBuilt: 0,
+          factoryLinesBuilt: 0,
+          prestiges: 0,
+          legacyEarned: 0,
+          peakMoney: 0,
+          peakSmelterLines: 0,
+          peakCoreStock: 0
+        };
+      }
+
+      stageConfigs.forEach((stage) => {
+        stageState[stage.key] = { lines: 0, speed: 0, value: 0, yield: 0 };
+        stageAccumulators[stage.key] = 0;
+      });
+
+      const tabsBar = $("tabsBar");
+      const advancedPanels = $("advancedPanels");
+
+      function stageMachineMarkup(stage) {
+        switch (stage.key) {
+          case "circuits":
+            return `
+              <div id="${stage.key}-shell" class="machine-shell machine-shell-${stage.key}">
+                <div class="assembler-arm assembler-arm-left"></div>
+                <div class="assembler-arm assembler-arm-right"></div>
+                <div id="${stage.key}-core" class="machine-glow"></div>
+                <div class="assembler-stack"><span></span><span></span><span></span></div>
+              </div>
+            `;
+          case "engines":
+            return `
+              <div id="${stage.key}-shell" class="machine-shell machine-shell-${stage.key}">
+                <div class="forge-fire"></div>
+                <div class="forge-hammer"></div>
+                <div id="${stage.key}-core" class="machine-glow"></div>
+                <div class="forge-anvil"></div>
+              </div>
+            `;
+          case "cores":
+            return `
+              <div id="${stage.key}-shell" class="machine-shell machine-shell-${stage.key}">
+                <div class="reactor-ring outer"></div>
+                <div class="reactor-ring inner"></div>
+                <div class="reactor-orbit a"></div>
+                <div class="reactor-orbit b"></div>
+                <div id="${stage.key}-core" class="machine-glow"></div>
+              </div>
+            `;
+          default:
+            return `
+              <div id="${stage.key}-shell" class="machine-shell machine-shell-${stage.key}">
+                <div id="${stage.key}-core" class="machine-glow"></div>
+              </div>
+            `;
+        }
+      }
+
+      function createStageUI(stage) {
+        const tabBtn = document.createElement("button");
+        tabBtn.className = "tab-btn";
+        tabBtn.dataset.tab = stage.tab;
+        tabBtn.hidden = true;
+        tabBtn.textContent = stage.label;
+        tabsBar.appendChild(tabBtn);
+
+        const section = document.createElement("section");
+        section.id = `tab-${stage.tab}`;
+        section.className = "tab-panel";
+        section.hidden = true;
+        section.style.setProperty("--stageColor", stage.color);
+        section.style.setProperty("--stageAccent", stage.accent);
+
+        section.innerHTML = `
+          <div class="layout">
+            <div class="card">
+              <div class="section-head">
+                <div>
+                  <h2>${stage.title}</h2>
+                  <p>${stage.desc}</p>
+                </div>
+                <div class="status-pill" id="${stage.key}-status">手動処理</div>
+              </div>
+
+              <div class="stage-box">
+                <strong id="${stage.key}-stageName">${stage.names[0]}</strong>
+                <span id="${stage.key}-stageText">${stage.texts[0]}</span>
+              </div>
+
+              <div class="machine-row">
+                <div class="row-head">
+                  <strong>${stage.installLabel}</strong>
+                  <span id="${stage.key}-rateText">手動のみ</span>
+                </div>
+                <div id="${stage.key}-board" class="machine-board machine-board-${stage.key}">
+                  ${stageMachineMarkup(stage)}
+                  <div id="${stage.key}-lane" class="stage-lane"></div>
+                </div>
+              </div>
+
+              <div class="summary-grid three" style="margin-top:16px;">
+                <div><span>Recipe</span><strong id="${stage.key}-recipeText">${stage.recipe} ${stage.inputLabel} → 1 ${stage.outputLabel}</strong></div>
+                <div><span>Sell Price</span><strong id="${stage.key}-sellText">1 ${stage.outputLabel} = $${stage.sellBase}</strong></div>
+                <div><span>Auto Lines</span><strong id="${stage.key}-lineText">0 lines</strong></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="section-head">
+                <div>
+                  <h2>${stage.outputLabel} Processing</h2>
+                  <p>${stage.inputLabel}から${stage.outputLabel}を作り、高単価で売却します。</p>
+                </div>
+              </div>
+
+              <div class="stack">
+                <div class="subpanel">
+                  <h3>Manual Processing</h3>
+                  <p>手動で${stage.outputLabel}を加工します。</p>
+                  <div class="inline-meta">
+                    <span>Recipe: <strong id="${stage.key}-recipeInline">${stage.recipe} ${stage.inputLabel} → 1 ${stage.outputLabel}</strong></span>
+                    <span>Bonus: <strong id="${stage.key}-yieldText">+1 chance 0%</strong></span>
+                  </div>
+                  <div style="margin-top:12px;">
+                    <button id="${stage.key}-manualBtn" class="action-btn secondary">手動で加工する</button>
+                  </div>
+                </div>
+
+                <div class="subpanel">
+                  <h3>${stage.outputLabel} Sales</h3>
+                  <p>${stage.outputLabel}を売却して高額な$Gに変えます。</p>
+                  <div class="inline-meta">
+                    <span>Price: <strong id="${stage.key}-sellInline">1 ${stage.outputLabel} = $${stage.sellBase}</strong></span>
+                  </div>
+                  <div class="actions-row" style="margin-top:12px;">
+                    <button id="${stage.key}-sellOneBtn" class="ghost-btn">1個売る</button>
+                    <button id="${stage.key}-sellAllBtn" class="ghost-btn">全部売る</button>
+                  </div>
+                  <div style="margin-top:10px;">
+                    <button id="${stage.key}-autoSellBtn" class="toggle-btn" hidden>Auto Sell ${stage.outputLabel}: OFF</button>
+                  </div>
+                </div>
+
+                <div class="upgrade-card">
+                  <div>
+                    <h3>${stage.installLabel}</h3>
+                    <p>自動で${stage.inputLabel}を${stage.outputLabel}へ変換する製造ラインを増設します。</p>
+                  </div>
+                  <button id="${stage.key}-installBtn" class="shop-btn">
+                    <span id="${stage.key}-installActionText">建設</span>
+                    <small id="${stage.key}-installCost">${formatCost(stage.installCost)}</small>
+                  </button>
+                </div>
+
+                <div class="upgrade-card">
+                  <div>
+                    <h3>Machine Speed Lv.<span id="${stage.key}-speedLv">0</span></h3>
+                    <p>自動設備の処理サイクルを短縮します。</p>
+                  </div>
+                  <button id="${stage.key}-speedBtn" class="shop-btn">
+                    <span>強化</span>
+                    <small id="${stage.key}-speedCost"></small>
+                  </button>
+                </div>
+
+                <div class="upgrade-card">
+                  <div>
+                    <h3>Output Quality Lv.<span id="${stage.key}-valueLv">0</span></h3>
+                    <p>${stage.outputLabel}の売却単価を上げます。</p>
+                  </div>
+                  <button id="${stage.key}-valueBtn" class="shop-btn">
+                    <span>強化</span>
+                    <small id="${stage.key}-valueCost"></small>
+                  </button>
+                </div>
+
+                <div class="upgrade-card">
+                  <div>
+                    <h3>Yield Booster Lv.<span id="${stage.key}-yieldLv">0</span></h3>
+                    <p>加工時に追加${stage.outputLabel}を得る確率を上げます。</p>
+                  </div>
+                  <button id="${stage.key}-yieldBtn" class="shop-btn">
+                    <span>強化</span>
+                    <small id="${stage.key}-yieldCost"></small>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        advancedPanels.appendChild(section);
+
+        stageEls[stage.key] = {
+          tabBtn,
+          panel: section,
+          status: $(`${stage.key}-status`),
+          stageName: $(`${stage.key}-stageName`),
+          stageText: $(`${stage.key}-stageText`),
+          rateText: $(`${stage.key}-rateText`),
+          board: $(`${stage.key}-board`),
+          shell: $(`${stage.key}-shell`),
+          core: $(`${stage.key}-core`),
+          lane: $(`${stage.key}-lane`),
+          recipeText: $(`${stage.key}-recipeText`),
+          lineText: $(`${stage.key}-lineText`),
+          recipeInline: $(`${stage.key}-recipeInline`),
+          yieldText: $(`${stage.key}-yieldText`),
+          sellText: $(`${stage.key}-sellText`),
+          sellInline: $(`${stage.key}-sellInline`),
+          manualBtn: $(`${stage.key}-manualBtn`),
+          sellOneBtn: $(`${stage.key}-sellOneBtn`),
+          sellAllBtn: $(`${stage.key}-sellAllBtn`),
+          autoSellBtn: $(`${stage.key}-autoSellBtn`),
+          installBtn: $(`${stage.key}-installBtn`),
+          installActionText: $(`${stage.key}-installActionText`),
+          installCost: $(`${stage.key}-installCost`),
+          speedLv: $(`${stage.key}-speedLv`),
+          speedBtn: $(`${stage.key}-speedBtn`),
+          speedCost: $(`${stage.key}-speedCost`),
+          valueLv: $(`${stage.key}-valueLv`),
+          valueBtn: $(`${stage.key}-valueBtn`),
+          valueCost: $(`${stage.key}-valueCost`),
+          yieldLv: $(`${stage.key}-yieldLv`),
+          yieldBtn: $(`${stage.key}-yieldBtn`),
+          yieldCost: $(`${stage.key}-yieldCost`)
+        };
+      }
+
+      function createResearchCards() {
+        const container = $("researchCards");
+        researchConfigs.forEach((item) => {
+          const card = document.createElement("div");
+          card.className = "research-card";
+          card.id = `research-${item.key}`;
+          card.innerHTML = `
+            <div>
+              <h3>${item.title}</h3>
+              <p>${item.desc}</p>
+            </div>
+            <div>
+              <div id="research-status-${item.key}" class="research-status">未研究</div>
+              <button id="research-btn-${item.key}" class="shop-btn" style="margin-top:10px;">
+                <span>研究</span>
+                <small id="research-cost-${item.key}">${formatCost(item.cost)}</small>
+              </button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      }
+
+      function formatNumber(value) {
+        const rounded = Math.round(value * 100) / 100;
+        if (Math.abs(rounded - Math.round(rounded)) < 0.001) {
+          return Math.round(rounded).toLocaleString("ja-JP");
+        }
+        if (Math.abs(rounded) >= 100) {
+          return rounded.toFixed(0).toLocaleString("ja-JP");
+        }
+        return rounded.toFixed(1).replace(/\.0$/, "");
+      }
+
+      function formatCost(cost) {
+        const parts = [];
+        if (cost.money) parts.push(`$${formatNumber(cost.money)}`);
+        if (cost.scrap) parts.push(`${formatNumber(cost.scrap)} Scrap`);
+        if (cost.parts) parts.push(`${formatNumber(cost.parts)} Ingots`);
+        if (cost.modules) parts.push(`${formatNumber(cost.modules)} Parts`);
+        if (cost.circuits) parts.push(`${formatNumber(cost.circuits)} Modules`);
+        if (cost.engines) parts.push(`${formatNumber(cost.engines)} Engines`);
+        if (cost.cores) parts.push(`${formatNumber(cost.cores)} Cores`);
+        return parts.join(" / ");
+      }
+
+      stageConfigs.forEach(createStageUI);
+      createResearchCards();
+
+      const els = {
+        moneyValue: $("moneyValue"),
+        scrapValue: $("scrapValue"),
+        partsValue: $("partsValue"),
+        modulesValue: $("modulesValue"),
+        circuitsValue: $("circuitsValue"),
+        enginesValue: $("enginesValue"),
+        coresValue: $("coresValue"),
+        debugToggleBtn: $("debugToggleBtn"),
+        soundToggleBtn: $("soundToggleBtn"),
+        manualBoard: $("manualBoard"),
+        manualCanvas: $("manualCanvas"),
+        nextCanvas: $("nextCanvas"),
+        aiBoard: $("aiBoard"),
+        manualBtn: $("manualBtn"),
+        moveLeftBtn: $("moveLeftBtn"),
+        rotateBtn: $("rotateBtn"),
+        moveRightBtn: $("moveRightBtn"),
+        softDropBtn: $("softDropBtn"),
+        resetStackBtn: $("resetStackBtn"),
+        manualYieldText: $("manualYieldText"),
+        comboText: $("comboText"),
+        stackStateText: $("stackStateText"),
+        manualLinesValue: $("manualLinesValue"),
+        streakValue: $("streakValue"),
+        nextPieceText: $("nextPieceText"),
+        dropModeText: $("dropModeText"),
+        debugPanel: $("debugPanel"),
+        debugActivePiece: $("debugActivePiece"),
+        debugNextPiece: $("debugNextPiece"),
+        debugBagSize: $("debugBagSize"),
+        debugAiBots: $("debugAiBots"),
+        debugScrapInput: $("debugScrapInput"),
+        debugIngotInput: $("debugIngotInput"),
+        debugMoneyInput: $("debugMoneyInput"),
+        debugBotInput: $("debugBotInput"),
+        debugSmelterLineInput: $("debugSmelterLineInput"),
+        debugLegacyInput: $("debugLegacyInput"),
+        debugScrapBtn: $("debugScrapBtn"),
+        debugIngotBtn: $("debugIngotBtn"),
+        debugMoneyBtn: $("debugMoneyBtn"),
+        debugResearchBtn: $("debugResearchBtn"),
+        debugBotBtn: $("debugBotBtn"),
+        debugSmelterLineBtn: $("debugSmelterLineBtn"),
+        debugLegacyBtn: $("debugLegacyBtn"),
+        debugForceIBtn: $("debugForceIBtn"),
+        debugResetBtn: $("debugResetBtn"),
+        manualHarvestLv: $("manualHarvestLv"),
+        manualHarvestBtn: $("manualHarvestBtn"),
+        manualHarvestCost: $("manualHarvestCost"),
+        comboLv: $("comboLv"),
+        comboBtn: $("comboBtn"),
+        comboCost: $("comboCost"),
+        droneLv: $("droneLv"),
+        droneBtn: $("droneBtn"),
+        droneCost: $("droneCost"),
+        aiGateText: $("aiGateText"),
+        buyBotBtn: $("buyBotBtn"),
+        buyBotCost: $("buyBotCost"),
+        aiYieldLv: $("aiYieldLv"),
+        aiYieldBtn: $("aiYieldBtn"),
+        aiYieldCost: $("aiYieldCost"),
+        aiSpeedLv: $("aiSpeedLv"),
+        aiSpeedBtn: $("aiSpeedBtn"),
+        aiSpeedCost: $("aiSpeedCost"),
+        aiStatus: $("aiStatus"),
+        aiBotsValue: $("aiBotsValue"),
+        aiOutputText: $("aiOutputText"),
+        factoryStatus: $("factoryStatus"),
+        factoryStageName: $("factoryStageName"),
+        factoryStageText: $("factoryStageText"),
+        manualRecipeText: $("manualRecipeText"),
+        manualRecipeInline: $("manualRecipeInline"),
+        pressArm: $("pressArm"),
+        workbench: $("workbench"),
+        manualPartBtn: $("manualPartBtn"),
+        sellPartBtn: $("sellPartBtn"),
+        sellAllPartsBtn: $("sellAllPartsBtn"),
+        autoSellPartsBtn: $("autoSellPartsBtn"),
+        partSellText: $("partSellText"),
+        workshopLv: $("workshopLv"),
+        workshopBtn: $("workshopBtn"),
+        workshopCost: $("workshopCost"),
+        buildLineBtn: $("buildLineBtn"),
+        buildLineCost: $("buildLineCost"),
+        automationNote: $("automationNote"),
+        conveyorLv: $("conveyorLv"),
+        conveyorBtn: $("conveyorBtn"),
+        conveyorCost: $("conveyorCost"),
+        efficiencyLv: $("efficiencyLv"),
+        efficiencyBtn: $("efficiencyBtn"),
+        efficiencyCost: $("efficiencyCost"),
+        gridLv: $("gridLv"),
+        gridBtn: $("gridBtn"),
+        gridCost: $("gridCost"),
+        marketLv: $("marketLv"),
+        marketBtn: $("marketBtn"),
+        marketCost: $("marketCost"),
+        contractLv: $("contractLv"),
+        contractBtn: $("contractBtn"),
+        contractCost: $("contractCost"),
+        factoryModeText: $("factoryModeText"),
+        lineCountValue: $("lineCountValue"),
+        autoOutputText: $("autoOutputText"),
+        autoRecipeText: $("autoRecipeText"),
+        smelterPreviewText: $("smelterPreviewText"),
+        partStockText: $("partStockText"),
+        researchCountText: $("researchCountText"),
+        roadmapText: $("roadmapText"),
+        runPlayTime: $("runPlayTime"),
+        runManualLinesStat: $("runManualLinesStat"),
+        runScrapStat: $("runScrapStat"),
+        runMoneyStat: $("runMoneyStat"),
+        runIngotsStat: $("runIngotsStat"),
+        runPartsStat: $("runPartsStat"),
+        runModulesStat: $("runModulesStat"),
+        runEnginesStat: $("runEnginesStat"),
+        runCoresStat: $("runCoresStat"),
+        runResearchStat: $("runResearchStat"),
+        runSmelterStat: $("runSmelterStat"),
+        runFactoryLinesStat: $("runFactoryLinesStat"),
+        runSpendStat: $("runSpendStat"),
+        lifetimePlayTime: $("lifetimePlayTime"),
+        totalManualLinesStat: $("totalManualLinesStat"),
+        totalScrapStat: $("totalScrapStat"),
+        totalMoneyStat: $("totalMoneyStat"),
+        totalIngotsStat: $("totalIngotsStat"),
+        totalPartsStat: $("totalPartsStat"),
+        totalModulesStat: $("totalModulesStat"),
+        totalEnginesStat: $("totalEnginesStat"),
+        totalCoresStat: $("totalCoresStat"),
+        totalPrestigeStat: $("totalPrestigeStat"),
+        totalLegacyStat: $("totalLegacyStat"),
+        peakMoneyStat: $("peakMoneyStat"),
+        peakSmelterStat: $("peakSmelterStat"),
+        prestigeStatusText: $("prestigeStatusText"),
+        legacyCoresValue: $("legacyCoresValue"),
+        legacyOutputBonus: $("legacyOutputBonus"),
+        legacySellBonus: $("legacySellBonus"),
+        legacyStartCache: $("legacyStartCache"),
+        prestigeRequirementText: $("prestigeRequirementText"),
+        prestigeGainText: $("prestigeGainText"),
+        prestigeRunCoreText: $("prestigeRunCoreText"),
+        prestigeBtn: $("prestigeBtn"),
+        prestigeRunsText: $("prestigeRunsText"),
+        prestigeLifetimeText: $("prestigeLifetimeText"),
+        prestigeBestText: $("prestigeBestText"),
+        toast: $("toast")
+      };
+
+      const manualCtx = els.manualCanvas.getContext("2d");
+      const nextCtx = els.nextCanvas.getContext("2d");
+
+      const lineEls = [
+        { wrap: $("line1Wrap"), belt: $("line1Belt"), label: $("line1Label"), meter: $("line1Meter") },
+        { wrap: $("line2Wrap"), belt: $("line2Belt"), label: $("line2Label"), meter: $("line2Meter") },
+        { wrap: $("line3Wrap"), belt: $("line3Belt"), label: $("line3Label"), meter: $("line3Meter") },
+        { wrap: $("line4Wrap"), belt: $("line4Belt"), label: $("line4Label"), meter: $("line4Meter") }
+      ];
+
+      const state = {
+        money: 0,
+        scrap: 0,
+        parts: 0,
+        modules: 0,
+        circuits: 0,
+        engines: 0,
+        cores: 0,
+        manualHarvestLevel: 0,
+        comboLevel: 0,
+        droneLevel: 0,
+        aiBots: 0,
+        debugMode: false,
+        aiYieldLevel: 0,
+        aiSpeedLevel: 0,
+        workshopLevel: 0,
+        lineCount: 0,
+        conveyorLevel: 0,
+        efficiencyLevel: 0,
+        gridLevel: 0,
+        marketLevel: 0,
+        contractLevel: 0,
+        autoSell: createAutoSellState(),
+        research: createResearchState(),
+        stats: {
+          run: createStatsBlock(),
+          total: createStatsBlock()
+        },
+        prestige: {
+          legacyCores: 0,
+          totalEarned: 0,
+          totalPrestiges: 0
+        },
+        soundOn: true
+      };
+
+      const tetrominoes = [
+        [[0,1],[1,1],[2,1],[3,1]],
+        [[0,0],[1,0],[0,1],[1,1]],
+        [[1,0],[0,1],[1,1],[2,1]],
+        [[0,0],[0,1],[1,1],[2,1]],
+        [[2,0],[0,1],[1,1],[2,1]],
+        [[1,0],[2,0],[0,1],[1,1]],
+        [[0,0],[1,0],[1,1],[2,1]]
+      ];
+
+      const colors = ["#ffb703", "#fb8500", "#4cc9f0", "#69df9b", "#f72585", "#adb5bd", "#ffd166"];
+
+      const tetrisPieces = {
+        I: { color: "#4cc9f0", matrix: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]] },
+        O: { color: "#ffd166", matrix: [[1,1],[1,1]] },
+        T: { color: "#f72585", matrix: [[0,1,0],[1,1,1],[0,0,0]] },
+        L: { color: "#fb8500", matrix: [[0,0,1],[1,1,1],[0,0,0]] },
+        J: { color: "#8ecae6", matrix: [[1,0,0],[1,1,1],[0,0,0]] },
+        S: { color: "#69df9b", matrix: [[0,1,1],[1,1,0],[0,0,0]] },
+        Z: { color: "#ff6b6b", matrix: [[1,1,0],[0,1,1],[0,0,0]] }
+      };
+      const tetrisPieceKeys = Object.keys(tetrisPieces);
+      const tetris = {
+        cols: 10,
+        rows: 20,
+        board: [],
+        active: null,
+        nextType: null,
+        queue: [],
+        dropAccumulator: 0,
+        lines: 0,
+        comboStreak: 0,
+        gameOver: false
+      };
+
+      let activeTab = "tetris";
+      let toastTimer = null;
+      let lastFrame = performance.now();
+      let aiAccumulator = 0;
+      let sellAccumulator = 0;
+      let smelterWorkAccumulator = 0;
+
+      const sfx = {
+        ctx: null,
+        enabled: true,
+        ensure() {
+          if (!this.enabled) return null;
+          if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return null;
+            this.ctx = new AudioCtx();
+          }
+          if (this.ctx.state === "suspended") {
+            this.ctx.resume();
+          }
+          return this.ctx;
+        },
+        tone(freq, duration, type, volume, when = 0, slide = 0) {
+          const ctx = this.ensure();
+          if (!ctx) return;
+          const t = ctx.currentTime + when;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, t);
+          if (slide) {
+            osc.frequency.linearRampToValueAtTime(freq + slide, t + duration);
+          }
+          gain.gain.setValueAtTime(0.0001, t);
+          gain.gain.exponentialRampToValueAtTime(volume, t + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(t);
+          osc.stop(t + duration + 0.02);
+        },
+        play(kind) {
+          if (!this.enabled) return;
+          switch (kind) {
+            case "move":
+              this.tone(460, 0.035, "square", 0.013);
+              break;
+            case "rotate":
+              this.tone(580, 0.04, "triangle", 0.016);
+              this.tone(760, 0.05, "triangle", 0.01, 0.02);
+              break;
+            case "softDrop":
+              this.tone(210, 0.03, "square", 0.012);
+              break;
+            case "hardDrop":
+              this.tone(180, 0.04, "sawtooth", 0.018);
+              this.tone(110, 0.08, "triangle", 0.014, 0.03, -18);
+              break;
+            case "lock":
+              this.tone(140, 0.05, "square", 0.018);
+              this.tone(110, 0.06, "triangle", 0.012, 0.02, -14);
+              break;
+            case "lineClear":
+              this.tone(420, 0.05, "square", 0.028);
+              this.tone(620, 0.08, "triangle", 0.02, 0.04);
+              this.tone(820, 0.12, "triangle", 0.014, 0.1);
+              break;
+            case "tetrisClear":
+              this.tone(420, 0.05, "square", 0.03);
+              this.tone(620, 0.07, "triangle", 0.024, 0.04);
+              this.tone(860, 0.1, "triangle", 0.018, 0.1);
+              this.tone(1080, 0.16, "triangle", 0.014, 0.16);
+              break;
+            case "gameOver":
+              this.tone(180, 0.08, "sawtooth", 0.03, 0, -40);
+              this.tone(140, 0.12, "triangle", 0.02, 0.08, -50);
+              break;
+            case "harvest":
+              this.tone(280, 0.06, "square", 0.03);
+              this.tone(420, 0.08, "triangle", 0.02, 0.04);
+              break;
+            case "process":
+              this.tone(220, 0.05, "sawtooth", 0.025);
+              this.tone(340, 0.08, "square", 0.02, 0.05);
+              break;
+            case "assemble":
+              this.tone(520, 0.045, "square", 0.02);
+              this.tone(760, 0.035, "triangle", 0.014, 0.03);
+              this.tone(980, 0.025, "square", 0.01, 0.07);
+              break;
+            case "assembleBuild":
+              this.tone(260, 0.05, "square", 0.02);
+              this.tone(520, 0.06, "triangle", 0.015, 0.05);
+              this.tone(820, 0.09, "triangle", 0.012, 0.11);
+              break;
+            case "forge":
+              this.tone(180, 0.05, "sawtooth", 0.024);
+              this.tone(120, 0.09, "triangle", 0.018, 0.03, -24);
+              this.tone(320, 0.04, "square", 0.012, 0.06);
+              break;
+            case "forgeBuild":
+              this.tone(160, 0.07, "sawtooth", 0.026);
+              this.tone(260, 0.06, "square", 0.018, 0.04);
+              this.tone(110, 0.12, "triangle", 0.018, 0.1, -20);
+              break;
+            case "reactor":
+              this.tone(220, 0.12, "sine", 0.018);
+              this.tone(440, 0.08, "triangle", 0.013, 0.04);
+              this.tone(660, 0.16, "sine", 0.01, 0.08);
+              break;
+            case "reactorBuild":
+              this.tone(180, 0.1, "sine", 0.018);
+              this.tone(360, 0.14, "triangle", 0.014, 0.05);
+              this.tone(720, 0.18, "sine", 0.012, 0.1);
+              break;
+            case "sell":
+              this.tone(760, 0.05, "triangle", 0.025);
+              this.tone(980, 0.07, "triangle", 0.018, 0.05);
+              break;
+            case "build":
+              this.tone(240, 0.07, "square", 0.03);
+              this.tone(380, 0.08, "square", 0.025, 0.06);
+              this.tone(520, 0.1, "triangle", 0.018, 0.12);
+              break;
+            case "research":
+              this.tone(300, 0.06, "triangle", 0.02);
+              this.tone(450, 0.08, "triangle", 0.02, 0.06);
+              this.tone(620, 0.12, "triangle", 0.018, 0.12);
+              break;
+            case "error":
+              this.tone(170, 0.08, "sawtooth", 0.03, 0, -40);
+              break;
+          }
+        }
+      };
+
+      document.addEventListener("pointerdown", () => sfx.ensure(), { capture: true });
+
+      function normalizeResources() {
+        ["money", "scrap", "parts", "modules", "circuits", "engines", "cores"].forEach((key) => {
+          state[key] = Math.max(0, Math.round(state[key] * 100) / 100);
+        });
+      }
+
+      function canAfford(cost) {
+        return state.money + 1e-9 >= (cost.money || 0) &&
+          state.scrap + 1e-9 >= (cost.scrap || 0) &&
+          state.parts + 1e-9 >= (cost.parts || 0) &&
+          state.modules + 1e-9 >= (cost.modules || 0) &&
+          state.circuits + 1e-9 >= (cost.circuits || 0) &&
+          state.engines + 1e-9 >= (cost.engines || 0) &&
+          state.cores + 1e-9 >= (cost.cores || 0);
+      }
+
+      function payCost(cost) {
+        state.money -= cost.money || 0;
+        state.scrap -= cost.scrap || 0;
+        state.parts -= cost.parts || 0;
+        state.modules -= cost.modules || 0;
+        state.circuits -= cost.circuits || 0;
+        state.engines -= cost.engines || 0;
+        state.cores -= cost.cores || 0;
+        addStat("moneySpent", cost.money || 0);
+        normalizeResources();
+      }
+
+      function spend(cost, onSuccess, fail = "資源が足りません", sound = "build") {
+        if (!canAfford(cost)) {
+          showToast(fail);
+          sfx.play("error");
+          return;
+        }
+        payCost(cost);
+        onSuccess();
+        sfx.play(sound);
+        render();
+      }
+
+      function showToast(message) {
+        els.toast.textContent = message;
+        els.toast.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => els.toast.classList.remove("show"), 1400);
+      }
+
+      function addStat(key, value, target = "both") {
+        if (!value) return;
+        if (target === "run" || target === "both") {
+          state.stats.run[key] += value;
+        }
+        if (target === "total" || target === "both") {
+          state.stats.total[key] += value;
+        }
+      }
+
+      function setStatMax(key, value, target = "both") {
+        if (target === "run" || target === "both") {
+          state.stats.run[key] = Math.max(state.stats.run[key], value);
+        }
+        if (target === "total" || target === "both") {
+          state.stats.total[key] = Math.max(state.stats.total[key], value);
+        }
+      }
+
+      function refreshHighWaterMarks() {
+        setStatMax("peakMoney", state.money);
+        setStatMax("peakSmelterLines", state.lineCount);
+        setStatMax("peakCoreStock", state.cores);
+      }
+
+      function formatDuration(seconds) {
+        const total = Math.max(0, Math.floor(seconds));
+        const h = Math.floor(total / 3600);
+        const m = Math.floor((total % 3600) / 60);
+        const s = total % 60;
+        if (h > 0) {
+          return `${h}h ${m}m ${s}s`;
+        }
+        if (m > 0) {
+          return `${m}m ${s}s`;
+        }
+        return `${s}s`;
+      }
+
+      function stageOutputStatKey(stage) {
+        switch (stage.key) {
+          case "modules":
+            return "partsMade";
+          case "circuits":
+            return "modulesMade";
+          case "engines":
+            return "enginesMade";
+          case "cores":
+            return "coresMade";
+          default:
+            return null;
+        }
+      }
+
+      function readDebugNumber(input, fallback = 1) {
+        const value = Number(input?.value);
+        if (!Number.isFinite(value)) return fallback;
+        return Math.max(1, Math.floor(value));
+      }
+
+      function getLegacyOutputMultiplier() {
+        return 1 + state.prestige.legacyCores * 0.04;
+      }
+
+      function getLegacySellMultiplier() {
+        return 1 + state.prestige.legacyCores * 0.06;
+      }
+
+      function getLegacyStartScrap() {
+        return state.prestige.legacyCores * 6;
+      }
+
+      function getLegacyStartMoney() {
+        return state.prestige.legacyCores * 45;
+      }
+
+      function getPrestigeGain() {
+        const coreBasis = state.stats.run.coresMade + state.engines * 0.35;
+        return Math.max(0, Math.floor(Math.sqrt(coreBasis * 0.75)));
+      }
+
+      function resetProgressForPrestige() {
+        state.money = getLegacyStartMoney();
+        state.scrap = getLegacyStartScrap();
+        state.parts = 0;
+        state.modules = 0;
+        state.circuits = 0;
+        state.engines = 0;
+        state.cores = 0;
+        state.manualHarvestLevel = 0;
+        state.comboLevel = 0;
+        state.droneLevel = 0;
+        state.aiBots = 0;
+        state.aiYieldLevel = 0;
+        state.aiSpeedLevel = 0;
+        state.workshopLevel = 0;
+        state.lineCount = 0;
+        state.conveyorLevel = 0;
+        state.efficiencyLevel = 0;
+        state.gridLevel = 0;
+        state.marketLevel = 0;
+        state.contractLevel = 0;
+        state.autoSell = createAutoSellState();
+        state.research = createResearchState();
+        state.stats.run = createStatsBlock();
+
+        stageConfigs.forEach((stage) => {
+          stageState[stage.key].lines = 0;
+          stageState[stage.key].speed = 0;
+          stageState[stage.key].value = 0;
+          stageState[stage.key].yield = 0;
+          stageAccumulators[stage.key] = 0;
+        });
+
+        aiAccumulator = 0;
+        sellAccumulator = 0;
+        smelterWorkAccumulator = 0;
+        activeTab = "tetris";
+        resetTetrisBoard();
+      }
+
+      function performPrestige() {
+        const gain = getPrestigeGain();
+        if (gain <= 0) {
+          showToast("まだ転生に必要なCore出力が足りません");
+          sfx.play("error");
+          return;
+        }
+
+        state.prestige.legacyCores += gain;
+        state.prestige.totalEarned += gain;
+        state.prestige.totalPrestiges += 1;
+        addStat("prestiges", 1, "total");
+        addStat("legacyEarned", gain, "total");
+        resetProgressForPrestige();
+        setTab("tetris");
+        showToast(`転生完了: Legacy Cores +${formatNumber(gain)}`);
+        sfx.play("reactorBuild");
+        render();
+      }
+
+      function setTab(tab) {
+        const targetPanel = $(`tab-${tab}`);
+        if (!targetPanel || targetPanel.hidden) return;
+        activeTab = tab;
+        document.querySelectorAll(".tab-btn").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.tab === tab);
+        });
+        document.querySelectorAll(".tab-panel").forEach((panel) => {
+          panel.classList.toggle("active", panel.id === `tab-${tab}` && !panel.hidden);
+        });
+      }
+
+      tabsBar.addEventListener("click", (event) => {
+        const btn = event.target.closest(".tab-btn");
+        if (!btn || btn.disabled || btn.hidden) return;
+        setTab(btn.dataset.tab);
+      });
+
+      function flashLine(board) {
+        const flash = board.querySelector(".line-flash");
+        if (!flash) return;
+        flash.classList.remove("show");
+        void flash.offsetWidth;
+        flash.classList.add("show");
+      }
+
+      function spawnPiece(parent, cellSize, duration) {
+        if (!parent || parent.clientWidth < 80 || parent.offsetParent === null) return;
+        const piece = document.createElement("div");
+        piece.className = "piece";
+        piece.style.setProperty("--cell", `${cellSize}px`);
+        piece.style.setProperty("--travel", `${parent.clientHeight + 90}px`);
+        piece.style.setProperty("--spin", `${(Math.random() * 14 - 7).toFixed(1)}deg`);
+        piece.style.animationDuration = `${duration}ms`;
+        piece.style.left = `${Math.random() * Math.max(8, parent.clientWidth - cellSize * 4 - 12)}px`;
+
+        const shape = tetrominoes[Math.floor(Math.random() * tetrominoes.length)];
+        const color = colors[Math.floor(Math.random() * colors.length)];
+
+        shape.forEach(([x, y]) => {
+          const cell = document.createElement("span");
+          cell.className = "cell";
+          cell.style.left = `${x * cellSize}px`;
+          cell.style.top = `${y * cellSize}px`;
+          cell.style.background = color;
+          piece.appendChild(cell);
+        });
+
+        parent.appendChild(piece);
+        piece.addEventListener("animationend", () => piece.remove(), { once: true });
+      }
+
+      function spawnSpark(area) {
+        if (!area || area.offsetParent === null) return;
+        const spark = document.createElement("div");
+        spark.className = "spark";
+        spark.style.left = `${28 + Math.random() * Math.max(16, area.clientWidth - 56)}px`;
+        spark.style.top = `${36 + Math.random() * 26}px`;
+        area.appendChild(spark);
+        spark.addEventListener("animationend", () => spark.remove(), { once: true });
+      }
+
+      function spawnCargo(lane, color, accent) {
+        if (!lane || lane.offsetParent === null) return;
+        const el = document.createElement("div");
+        el.className = "product";
+        el.style.setProperty("--travel", `${lane.clientWidth + 90}px`);
+        el.style.setProperty("--cargoColor", color);
+        el.style.setProperty("--cargoLight", accent);
+        el.innerHTML = "<span></span><span></span>";
+        lane.appendChild(el);
+        el.addEventListener("animationend", () => el.remove(), { once: true });
+      }
+
+      function pulseCore(core) {
+        core.classList.remove("pulse");
+        void core.offsetWidth;
+        core.classList.add("pulse");
+      }
+
+      function getScrapMultiplier() {
+        return (1 + state.droneLevel * 0.15) * getLegacyOutputMultiplier();
+      }
+
+      function getManualScrapGain() {
+        return (2 + state.manualHarvestLevel) * getScrapMultiplier();
+      }
+
+      function getComboChance() {
+        return Math.min(0.6, state.comboLevel * 0.12);
+      }
+
+      function getComboBonus() {
+        return (2 + Math.floor(state.comboLevel / 2)) * getScrapMultiplier();
+      }
+
+      function getAiYield() {
+        return (1 + state.aiYieldLevel) * getScrapMultiplier();
+      }
+
+      function getAiRate() {
+        return 1 + state.aiSpeedLevel * 0.35;
+      }
+
+      function getManualPartCost() {
+        return Math.max(2, 4 - Math.floor(state.workshopLevel / 2));
+      }
+
+      function getManualPartYield() {
+        return 1 + Math.floor(state.workshopLevel / 2);
+      }
+
+      function getGlobalAutoMultiplier() {
+        return (1 + state.gridLevel * 0.08) * getLegacyOutputMultiplier();
+      }
+
+      function getSellMultiplier() {
+        const tradeBonus = state.research.trade ? 1.1 : 1;
+        return tradeBonus * (1 + state.marketLevel * 0.05) * getLegacySellMultiplier();
+      }
+
+      function getBatchBonus() {
+        return 1 + state.contractLevel * 0.04;
+      }
+
+      function getPartSellValue() {
+        return 10 * getSellMultiplier();
+      }
+
+      function getAutoPartCost() {
+        return Math.max(2, 5 - state.efficiencyLevel);
+      }
+
+      function getAutoCycle() {
+        return Math.max(1.2, 3 - state.conveyorLevel * 0.35) / getGlobalAutoMultiplier();
+      }
+
+      function getAutoOutputPerSec() {
+        if (!state.research.automation || state.lineCount === 0) return 0;
+        return state.lineCount / getAutoCycle();
+      }
+
+      function manualHarvestCost() {
+        return {
+          scrap: 12 + state.manualHarvestLevel * 14
+        };
+      }
+
+      function comboCost() {
+        return {
+          parts: 5 + state.comboLevel * 5,
+          money: state.comboLevel >= 1 ? 90 + state.comboLevel * 70 : 0
+        };
+      }
+
+      function droneCost() {
+        return {
+          money: 120 + state.droneLevel * 120,
+          parts: 6 + state.droneLevel * 4
+        };
+      }
+
+      function botCost() {
+        return { money: 90 + state.aiBots * 70 };
+      }
+
+      function aiYieldCost() {
+        return {
+          money: 140 + state.aiYieldLevel * 120,
+          parts: 8 + state.aiYieldLevel * 6
+        };
+      }
+
+      function aiSpeedCost() {
+        return {
+          money: 160 + state.aiSpeedLevel * 130,
+          parts: 10 + state.aiSpeedLevel * 7
+        };
+      }
+
+      function workshopCost() {
+        return {
+          money: 80 + state.workshopLevel * 70,
+          parts: 6 + state.workshopLevel * 5
+        };
+      }
+
+      function buildLineCost() {
+        return {
+          money: 180 + state.lineCount * 180,
+          parts: 14 + state.lineCount * 10
+        };
+      }
+
+      function stageLineCost(stage) {
+        const machine = getStageMachine(stage);
+        const resourceKey = Object.keys(stage.installCost).find((key) => key !== "money");
+        const baseMoney = stage.installCost.money || 0;
+        const baseResource = stage.installCost[resourceKey] || 0;
+        return {
+          money: baseMoney + machine.lines * Math.max(90, Math.round(baseMoney * 0.45)),
+          [resourceKey]: baseResource + machine.lines * Math.max(2, Math.ceil(baseResource * 0.5))
+        };
+      }
+
+      function conveyorCost() {
+        return {
+          money: 120 + state.conveyorLevel * 110,
+          parts: 10 + state.conveyorLevel * 8
+        };
+      }
+
+      function efficiencyCost() {
+        return {
+          money: 140 + state.efficiencyLevel * 120,
+          parts: 12 + state.efficiencyLevel * 9
+        };
+      }
+
+      function gridCost() {
+        return {
+          money: 200 + state.gridLevel * 180,
+          parts: 8 + state.gridLevel * 6
+        };
+      }
+
+      function marketCost() {
+        return {
+          money: 220 + state.marketLevel * 200,
+          parts: 6 + state.marketLevel * 5
+        };
+      }
+
+      function contractCost() {
+        return {
+          money: 260 + state.contractLevel * 230,
+          parts: 7 + state.contractLevel * 6
+        };
+      }
+
+      function getStageMachine(stage) {
+        return stageState[stage.key];
+      }
+
+      function stageSpeedCost(stage) {
+        const machine = getStageMachine(stage);
+        return {
+          money: stage.speedMoneyBase + machine.speed * stage.speedMoneyStep,
+          [stage.output]: stage.speedResBase + machine.speed * stage.speedResStep
+        };
+      }
+
+      function stageValueCost(stage) {
+        const machine = getStageMachine(stage);
+        return {
+          money: stage.valueMoneyBase + machine.value * stage.valueMoneyStep,
+          [stage.output]: stage.valueResBase + machine.value * stage.valueResStep
+        };
+      }
+
+      function stageYieldCost(stage) {
+        const machine = getStageMachine(stage);
+        return {
+          money: stage.yieldMoneyBase + machine.yield * stage.yieldMoneyStep,
+          [stage.output]: stage.yieldResBase + machine.yield * stage.yieldResStep
+        };
+      }
+
+      function getStageCycle(stage) {
+        const machine = getStageMachine(stage);
+        return Math.max(stage.cycleMin, stage.cycleBase - machine.speed * stage.cycleStep) / getGlobalAutoMultiplier();
+      }
+
+      function getStageBonusChance(stage) {
+        return Math.min(0.6, getStageMachine(stage).yield * stage.yieldStep);
+      }
+
+      function getStageSellValue(stage) {
+        const machine = getStageMachine(stage);
+        return (stage.sellBase + machine.value * stage.valueStep) * getSellMultiplier();
+      }
+
+      function getStageOutputPerSec(stage) {
+        const machine = getStageMachine(stage);
+        if (machine.lines === 0) return 0;
+        return machine.lines / getStageCycle(stage);
+      }
+
+      function researchReady(key) {
+        const cfg = researchConfigs.find((item) => item.key === key);
+        return cfg.prereq.every((req) => state.research[req]);
+      }
+
+      function researchCost(key) {
+        return researchConfigs.find((item) => item.key === key).cost;
+      }
+
+      function getManualDropInterval() {
+        return 0.85;
+      }
+
+      function shuffleTetrisBag(items) {
+        const bag = items.slice();
+        for (let i = bag.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [bag[i], bag[j]] = [bag[j], bag[i]];
+        }
+        return bag;
+      }
+
+      function randomTetrisType() {
+        if (tetris.queue.length === 0) {
+          tetris.queue.push(...shuffleTetrisBag(tetrisPieceKeys));
+        }
+        return tetris.queue.shift();
+      }
+
+      function cloneMatrix(matrix) {
+        return matrix.map((row) => row.slice());
+      }
+
+      function createEmptyBoard() {
+        return Array.from({ length: tetris.rows }, () => Array(tetris.cols).fill(null));
+      }
+
+      function createActivePiece(type) {
+        const matrix = cloneMatrix(tetrisPieces[type].matrix);
+        const topPadding = matrix.findIndex((row) => row.some(Boolean));
+        return {
+          type,
+          matrix,
+          x: Math.floor((tetris.cols - matrix[0].length) / 2),
+          y: -(topPadding < 0 ? 0 : topPadding)
+        };
+      }
+
+      function tetrisCollides(piece) {
+        for (let y = 0; y < piece.matrix.length; y++) {
+          for (let x = 0; x < piece.matrix[y].length; x++) {
+            if (!piece.matrix[y][x]) continue;
+            const boardX = piece.x + x;
+            const boardY = piece.y + y;
+            if (boardX < 0 || boardX >= tetris.cols || boardY >= tetris.rows) {
+              return true;
+            }
+            if (boardY >= 0 && tetris.board[boardY][boardX]) {
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      function drawBlock(ctx, cellX, cellY, color, cellSize) {
+        const px = cellX * cellSize;
+        const py = cellY * cellSize;
+        ctx.fillStyle = color;
+        ctx.fillRect(px + 2, py + 2, cellSize - 4, cellSize - 4);
+        ctx.fillStyle = "rgba(255,255,255,0.18)";
+        ctx.fillRect(px + 5, py + 5, cellSize * 0.35, cellSize * 0.18);
+        ctx.strokeStyle = "rgba(255,255,255,0.12)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px + 2.5, py + 2.5, cellSize - 5, cellSize - 5);
+      }
+
+      function drawMatrix(ctx, matrix, offsetX, offsetY, type, cellSize) {
+        const color = tetrisPieces[type].color;
+        matrix.forEach((row, y) => {
+          row.forEach((value, x) => {
+            if (!value) return;
+            const drawY = offsetY + y;
+            if (drawY < 0) return;
+            drawBlock(ctx, offsetX + x, drawY, color, cellSize);
+          });
+        });
+      }
+
+      function drawManualTetris() {
+        if (!manualCtx) return;
+        const width = els.manualCanvas.width;
+        const height = els.manualCanvas.height;
+        const cellSize = width / tetris.cols;
+        manualCtx.clearRect(0, 0, width, height);
+        manualCtx.fillStyle = "#091118";
+        manualCtx.fillRect(0, 0, width, height);
+
+        for (let y = 0; y < tetris.rows; y++) {
+          for (let x = 0; x < tetris.cols; x++) {
+            manualCtx.fillStyle = "rgba(255,255,255,0.035)";
+            manualCtx.fillRect(x * cellSize + 1, y * cellSize + 1, cellSize - 2, cellSize - 2);
+            const type = tetris.board[y][x];
+            if (type) {
+              drawBlock(manualCtx, x, y, tetrisPieces[type].color, cellSize);
+            }
+          }
+        }
+
+        if (tetris.active) {
+          drawMatrix(manualCtx, tetris.active.matrix, tetris.active.x, tetris.active.y, tetris.active.type, cellSize);
+        }
+      }
+
+      function drawNextPreview() {
+        if (!nextCtx) return;
+        const width = els.nextCanvas.width;
+        const height = els.nextCanvas.height;
+        nextCtx.clearRect(0, 0, width, height);
+        nextCtx.fillStyle = "#0a1218";
+        nextCtx.fillRect(0, 0, width, height);
+        if (!tetris.nextType) return;
+
+        const matrix = tetrisPieces[tetris.nextType].matrix;
+        const cellSize = 24;
+        const offsetX = ((width / cellSize) - matrix[0].length) / 2;
+        const offsetY = ((height / cellSize) - matrix.length) / 2;
+        drawMatrix(nextCtx, matrix, offsetX, offsetY, tetris.nextType, cellSize);
+      }
+
+      function rewardClearedLines(lines) {
+        const chainMultiplier = 1 + (lines - 1) * 0.45;
+        const gain = getManualScrapGain() * lines * chainMultiplier;
+        let bonus = 0;
+        if (state.comboLevel > 0 && (lines >= 2 || tetris.comboStreak > 0) && Math.random() < getComboChance()) {
+          bonus = getComboBonus();
+        }
+        state.scrap += gain + bonus;
+        tetris.lines += lines;
+        tetris.comboStreak += 1;
+        addStat("manualLines", lines);
+        addStat("scrapMined", gain + bonus);
+        normalizeResources();
+        flashLine(els.manualBoard);
+        sfx.play(lines >= 4 ? "tetrisClear" : "lineClear");
+        showToast(`ライン${lines}消去: Scrap +${formatNumber(gain + bonus)}`);
+      }
+
+      function clearCompletedLines() {
+        let cleared = 0;
+        for (let y = tetris.rows - 1; y >= 0; y--) {
+          if (tetris.board[y].every(Boolean)) {
+            tetris.board.splice(y, 1);
+            tetris.board.unshift(Array(tetris.cols).fill(null));
+            cleared += 1;
+            y += 1;
+          }
+        }
+        return cleared;
+      }
+
+      function spawnNextPiece() {
+        if (!tetris.nextType) {
+          tetris.nextType = randomTetrisType();
+        }
+        const type = tetris.nextType;
+        tetris.nextType = randomTetrisType();
+        const candidate = createActivePiece(type);
+        if (tetrisCollides(candidate)) {
+          tetris.active = null;
+          tetris.gameOver = true;
+          sfx.play("gameOver");
+          showToast("盤面が詰まりました。リセットして立て直せます。");
+        } else {
+          tetris.active = candidate;
+        }
+        drawNextPreview();
+      }
+
+      function mergeActivePiece() {
+        if (!tetris.active) return;
+        tetris.active.matrix.forEach((row, y) => {
+          row.forEach((value, x) => {
+            if (!value) return;
+            const boardY = tetris.active.y + y;
+            const boardX = tetris.active.x + x;
+            if (boardY >= 0) {
+              tetris.board[boardY][boardX] = tetris.active.type;
+            }
+          });
+        });
+      }
+
+      function lockActivePiece() {
+        if (!tetris.active || tetris.gameOver) return;
+        mergeActivePiece();
+        const cleared = clearCompletedLines();
+        if (cleared > 0) {
+          rewardClearedLines(cleared);
+        } else {
+          tetris.comboStreak = 0;
+          sfx.play("lock");
+        }
+        tetris.dropAccumulator = 0;
+        spawnNextPiece();
+        drawManualTetris();
+      }
+
+      function tryMovePiece(dx, dy, sound = null) {
+        if (!tetris.active || tetris.gameOver) return false;
+        const candidate = {
+          ...tetris.active,
+          x: tetris.active.x + dx,
+          y: tetris.active.y + dy
+        };
+        if (tetrisCollides(candidate)) return false;
+        tetris.active = candidate;
+        if (sound) {
+          sfx.play(sound);
+        }
+        drawManualTetris();
+        return true;
+      }
+
+      function rotateMatrix(matrix) {
+        return matrix[0].map((_, index) => matrix.map((row) => row[index]).reverse());
+      }
+
+      function rotateActivePiece() {
+        if (!tetris.active || tetris.gameOver) return false;
+        const rotated = rotateMatrix(tetris.active.matrix);
+        for (const kick of [0, -1, 1, -2, 2]) {
+          const candidate = {
+            ...tetris.active,
+            matrix: rotated,
+            x: tetris.active.x + kick
+          };
+          if (!tetrisCollides(candidate)) {
+            tetris.active = candidate;
+            sfx.play("rotate");
+            drawManualTetris();
+            return true;
+          }
+        }
+        return false;
+      }
+
+      function softDropActivePiece(withSound = false) {
+        if (!tryMovePiece(0, 1, withSound ? "softDrop" : null)) {
+          lockActivePiece();
+        }
+      }
+
+      function hardDropActivePiece() {
+        if (!tetris.active || tetris.gameOver) return;
+        let dropped = 0;
+        while (tryMovePiece(0, 1)) {
+          dropped += 1;
+        }
+        if (dropped > 0) {
+          sfx.play("hardDrop");
+        }
+        lockActivePiece();
+      }
+
+      function resetTetrisBoard() {
+        tetris.board = createEmptyBoard();
+        tetris.active = null;
+        tetris.nextType = null;
+        tetris.queue = [];
+        tetris.dropAccumulator = 0;
+        tetris.lines = 0;
+        tetris.comboStreak = 0;
+        tetris.gameOver = false;
+        spawnNextPiece();
+        drawManualTetris();
+      }
+
+      function updateTetris(dt) {
+        if (activeTab !== "tetris" || tetris.gameOver || !tetris.active) return;
+        tetris.dropAccumulator += dt;
+        const interval = getManualDropInterval();
+        while (tetris.dropAccumulator >= interval) {
+          tetris.dropAccumulator -= interval;
+          if (!tryMovePiece(0, 1)) {
+            lockActivePiece();
+            break;
+          }
+        }
+      }
+
+      function runAiCycle() {
+        const gain = state.aiBots * getAiYield();
+        state.scrap += gain;
+        addStat("scrapMined", gain);
+        normalizeResources();
+        if (activeTab === "tetris") {
+          const visuals = Math.min(4, Math.max(1, state.aiBots));
+          for (let i = 0; i < visuals; i++) {
+            setTimeout(() => spawnPiece(els.aiBoard, 20, Math.max(520, 920 - state.aiSpeedLevel * 70)), i * 90);
+          }
+          setTimeout(() => flashLine(els.aiBoard), 360);
+        }
+      }
+
+      function doManualPartProcess() {
+        const cost = getManualPartCost();
+        const yieldAmount = getManualPartYield();
+        if (state.scrap < cost) {
+          showToast("Scrapが足りません");
+          sfx.play("error");
+          return;
+        }
+        state.scrap -= cost;
+        state.parts += yieldAmount;
+        addStat("ingotsMade", yieldAmount);
+        normalizeResources();
+        els.pressArm.classList.remove("active");
+        void els.pressArm.offsetWidth;
+        els.pressArm.classList.add("active");
+        spawnSpark(els.workbench);
+        sfx.play("process");
+        showToast(`Ingots +${formatNumber(yieldAmount)}`);
+        render();
+      }
+
+      function runAutoLine(batchSize = 1) {
+        const cost = getAutoPartCost();
+        const maxByInput = Math.floor(state.scrap / cost);
+        const crafted = Math.min(batchSize, maxByInput);
+        if (crafted <= 0) return 0;
+        state.scrap -= crafted * cost;
+        state.parts += crafted;
+        addStat("ingotsMade", crafted);
+        normalizeResources();
+        if (activeTab === "factory") {
+          const visuals = Math.min(4, Math.max(1, state.lineCount));
+          for (let i = 0; i < visuals; i++) {
+            spawnCargo(lineEls[i].belt, "#f77f00", "#ffbf69");
+          }
+        }
+        return crafted;
+      }
+
+      function processStage(stage, quantity = 1, auto = false) {
+        const bonusChance = getStageBonusChance(stage);
+        const requested = Math.max(1, Math.floor(quantity));
+        const crafts = Math.min(requested, Math.floor(state[stage.input] / stage.recipe));
+        if (crafts <= 0) return 0;
+        const required = stage.recipe * crafts;
+        state[stage.input] -= required;
+        let output = crafts;
+        if (bonusChance > 0) {
+          if (crafts === 1) {
+            if (Math.random() < bonusChance) {
+              output += 1;
+            }
+          } else {
+            output += Math.floor(crafts * bonusChance + Math.random());
+          }
+        }
+        state[stage.output] += output;
+        const statKey = stageOutputStatKey(stage);
+        if (statKey) {
+          addStat(statKey, output);
+        }
+        normalizeResources();
+        const dom = stageEls[stage.key];
+        pulseCore(dom.core);
+        if (activeTab === stage.tab) {
+          const visuals = Math.min(4, Math.max(1, getStageMachine(stage).lines));
+          for (let i = 0; i < visuals; i++) {
+            spawnCargo(dom.lane, stage.color, stage.accent);
+          }
+        }
+        if (!auto) sfx.play(stage.processSound || "process");
+        return crafts;
+      }
+
+      function sellSingle(resourceKey) {
+        if (state[resourceKey] < 1) return false;
+        state[resourceKey] -= 1;
+        const value = resourceKey === "parts"
+          ? getPartSellValue()
+          : getStageSellValue(stageConfigs.find((stage) => stage.output === resourceKey));
+        state.money += value;
+        addStat("moneyEarned", value);
+        normalizeResources();
+        sfx.play("sell");
+        return true;
+      }
+
+      function sellAll(resourceKey, silent = false) {
+        if (state[resourceKey] <= 0) return false;
+        const qty = state[resourceKey];
+        state[resourceKey] = 0;
+        const value = resourceKey === "parts"
+          ? getPartSellValue()
+          : getStageSellValue(stageConfigs.find((stage) => stage.output === resourceKey));
+        state.money += qty * value * getBatchBonus();
+        addStat("moneyEarned", qty * value * getBatchBonus());
+        normalizeResources();
+        if (!silent) sfx.play("sell");
+        return true;
+      }
+
+      function completeResearch(key) {
+        if (state.research[key]) return;
+        if (!researchReady(key)) {
+          showToast("前提研究が必要です");
+          sfx.play("error");
+          return;
+        }
+        const cost = researchCost(key);
+        if (!canAfford(cost)) {
+          showToast("研究コストが足りません");
+          sfx.play("error");
+          return;
+        }
+        payCost(cost);
+        state.research[key] = true;
+        addStat("researchDone", 1);
+        showToast(`${researchConfigs.find((item) => item.key === key).title} 研究完了`);
+        sfx.play("research");
+        render();
+      }
+
+      function toggleDebugMode() {
+        state.debugMode = !state.debugMode;
+        showToast(state.debugMode ? "Debug mode ON" : "Debug mode OFF");
+        sfx.play(state.debugMode ? "build" : "process");
+        render();
+      }
+
+      function debugGrant(resources, message, sound = "build") {
+        Object.entries(resources).forEach(([key, value]) => {
+          state[key] += value;
+        });
+        normalizeResources();
+        showToast(message);
+        sfx.play(sound);
+        render();
+      }
+
+      function addSmelterLines(quantity, source = "build") {
+        const lines = Math.max(1, Math.floor(quantity));
+        state.lineCount += lines;
+        addStat("smelterLinesBuilt", lines);
+        showToast(`Auto Smelter +${formatNumber(lines)} lines`);
+        sfx.play(source === "debug" ? "process" : "build");
+        render();
+      }
+
+      function unlockAllResearch() {
+        researchConfigs.forEach((item) => {
+          state.research[item.key] = true;
+        });
+        showToast("全研究を解放しました");
+        sfx.play("research");
+        render();
+      }
+
+      function forceNextPiece(type) {
+        tetris.nextType = type;
+        showToast(`次ミノを ${type} に設定`);
+        sfx.play("rotate");
+        render();
+      }
+
+      function factoryStageInfo() {
+        if (!state.research.automation) {
+          return {
+            status: "手動精錬",
+            mode: "Manual Only",
+            name: "Stage 1: Hand Smelter",
+            text: "まだ小さな炉だけです。Scrapを手動で精錬してIngotsを作り、売却と研究の足場を作ります。"
+          };
+        }
+        if (state.lineCount === 0) {
+          return {
+            status: "設計準備中",
+            mode: "Automation Ready",
+            name: "Stage 2: Smelter Planning",
+            text: "自動製錬の研究は終わりましたが、まだラインは未建設です。高コストの増築で炉列が本格稼働し始めます。"
+          };
+        }
+        if (state.lineCount === 1) {
+          return {
+            status: state.scrap >= getAutoPartCost() ? "試験炉稼働中" : "材料待ち",
+            mode: "1 Auto Smelter",
+            name: "Stage 3: Pilot Smelter",
+            text: "最初の自動製錬ラインが稼働。小さな炉から量産工場への転換点です。"
+          };
+        }
+        if (state.lineCount < 6) {
+          return {
+            status: state.scrap >= getAutoPartCost() ? "増築炉稼働中" : "材料待ち",
+            mode: `${state.lineCount} Auto Smelters`,
+            name: "Stage 4: Expansion Hall",
+            text: "ライン増築が進み、中規模製錬所らしい流れが見えてきました。ここで稼いだ現金を次工程へ回す価値が高い局面です。"
+          };
+        }
+        if (state.lineCount < 20) {
+          return {
+            status: state.scrap >= getAutoPartCost() ? "大型製錬所稼働中" : "材料待ち",
+            mode: `${state.lineCount} Auto Smelters`,
+            name: "Stage 5: Mass Smelter Plant",
+            text: "二桁ラインの大型製錬所です。大量のScrapをIngotsへ押し流し、研究と加工ラインを強く支えます。"
+          };
+        }
+        return {
+          status: state.scrap >= getAutoPartCost() ? "メガ製錬都市稼働中" : "材料待ち",
+          mode: `${state.lineCount} Auto Smelters`,
+          name: "Stage 6: Smelter Megagrid",
+          text: "無数の炉列が同時稼働しています。追加ラインは集計処理で走り、工場全体の基礎体力を一段引き上げます。"
+        };
+      }
+
+      function stageInfo(stage) {
+        const machine = getStageMachine(stage);
+        if (machine.lines === 0) {
+          return {
+            status: "手動処理",
+            name: stage.names[0],
+            text: stage.texts[0]
+          };
+        }
+        if (machine.lines < 4) {
+          return {
+            status: state[stage.input] >= stage.recipe ? `${machine.lines} lines稼働中` : `${stage.inputLabel}待ち`,
+            name: stage.names[1],
+            text: stage.texts[1]
+          };
+        }
+        return {
+          status: state[stage.input] >= stage.recipe ? `${machine.lines} lines高効率稼働中` : `${stage.inputLabel}待ち`,
+          name: stage.names[2],
+          text: stage.texts[2]
+        };
+      }
+
+      function renderResearch() {
+        const done = researchConfigs.filter((item) => state.research[item.key]).length;
+        els.researchCountText.textContent = `${done} / ${researchConfigs.length} 完了`;
+
+        if (!state.research.trade) {
+          els.roadmapText.textContent = "まずはTrade Deskで売却効率を上げるのが安定します。";
+        } else if (!state.research.scripts) {
+          els.roadmapText.textContent = "次はStacking ScriptsでScrap採掘を自動化すると伸びやすくなります。";
+        } else if (!state.research.automation) {
+          els.roadmapText.textContent = "十分なIngotsと資金が揃ったらSmelter Automationで本格自動化へ進みます。";
+        } else if (!state.research.metallurgy) {
+          els.roadmapText.textContent = "次はPrecision MachiningでMachine Shopを開き、IngotsからParts加工へ入ります。";
+        } else if (!state.research.micro) {
+          els.roadmapText.textContent = "Machine ShopでPartsを貯め、Assembly解禁へ進めましょう。";
+        } else if (!state.research.heavy) {
+          els.roadmapText.textContent = "Modulesが揃ったらHeavy Powertrainで重工業段階へ進みます。";
+        } else if (!state.research.core) {
+          els.roadmapText.textContent = "Enginesを溜めてCore Architectureへ到達すると最終高級商品が見えてきます。";
+        } else if (!state.research.logistics) {
+          els.roadmapText.textContent = "最後にLogistics Networkで自動売却を解禁すると放置効率が大きく伸びます。";
+        } else {
+          els.roadmapText.textContent = "主要研究は完了です。Statsで推移を見つつ、Ascensionで転生タイミングを調整してください。";
+        }
+
+        researchConfigs.forEach((item) => {
+          const card = $(`research-${item.key}`);
+          const status = $(`research-status-${item.key}`);
+          const btn = $(`research-btn-${item.key}`);
+          const ready = researchReady(item.key);
+          const complete = state.research[item.key];
+
+          card.classList.toggle("completed", complete);
+          card.classList.toggle("locked", !complete && !ready);
+
+          if (complete) {
+            status.textContent = "完了";
+            btn.disabled = true;
+          } else if (!ready) {
+            status.textContent = "前提研究が必要";
+            btn.disabled = true;
+          } else {
+            status.textContent = "研究可能";
+            btn.disabled = !canAfford(item.cost);
+          }
+        });
+      }
+
+      function renderStats() {
+        els.runPlayTime.textContent = formatDuration(state.stats.run.playSeconds);
+        els.runManualLinesStat.textContent = formatNumber(state.stats.run.manualLines);
+        els.runScrapStat.textContent = formatNumber(state.stats.run.scrapMined);
+        els.runMoneyStat.textContent = `$${formatNumber(state.stats.run.moneyEarned)}`;
+        els.runIngotsStat.textContent = formatNumber(state.stats.run.ingotsMade);
+        els.runPartsStat.textContent = formatNumber(state.stats.run.partsMade);
+        els.runModulesStat.textContent = formatNumber(state.stats.run.modulesMade);
+        els.runEnginesStat.textContent = formatNumber(state.stats.run.enginesMade);
+        els.runCoresStat.textContent = formatNumber(state.stats.run.coresMade);
+        els.runResearchStat.textContent = formatNumber(state.stats.run.researchDone);
+        els.runSmelterStat.textContent = formatNumber(state.stats.run.smelterLinesBuilt);
+        els.runFactoryLinesStat.textContent = formatNumber(state.stats.run.factoryLinesBuilt);
+        els.runSpendStat.textContent = `$${formatNumber(state.stats.run.moneySpent)}`;
+
+        els.lifetimePlayTime.textContent = formatDuration(state.stats.total.playSeconds);
+        els.totalManualLinesStat.textContent = formatNumber(state.stats.total.manualLines);
+        els.totalScrapStat.textContent = formatNumber(state.stats.total.scrapMined);
+        els.totalMoneyStat.textContent = `$${formatNumber(state.stats.total.moneyEarned)}`;
+        els.totalIngotsStat.textContent = formatNumber(state.stats.total.ingotsMade);
+        els.totalPartsStat.textContent = formatNumber(state.stats.total.partsMade);
+        els.totalModulesStat.textContent = formatNumber(state.stats.total.modulesMade);
+        els.totalEnginesStat.textContent = formatNumber(state.stats.total.enginesMade);
+        els.totalCoresStat.textContent = formatNumber(state.stats.total.coresMade);
+        els.totalPrestigeStat.textContent = formatNumber(state.prestige.totalPrestiges);
+        els.totalLegacyStat.textContent = formatNumber(state.prestige.totalEarned);
+        els.peakMoneyStat.textContent = `$${formatNumber(state.stats.total.peakMoney)}`;
+        els.peakSmelterStat.textContent = formatNumber(state.stats.total.peakSmelterLines);
+      }
+
+      function renderAscension() {
+        const gain = getPrestigeGain();
+        els.legacyCoresValue.textContent = formatNumber(state.prestige.legacyCores);
+        els.legacyOutputBonus.textContent = `+${Math.round((getLegacyOutputMultiplier() - 1) * 100)}%`;
+        els.legacySellBonus.textContent = `+${Math.round((getLegacySellMultiplier() - 1) * 100)}%`;
+        els.legacyStartCache.textContent = `${formatNumber(getLegacyStartScrap())} Scrap / $${formatNumber(getLegacyStartMoney())}`;
+        els.prestigeGainText.textContent = `+${formatNumber(gain)} Legacy Cores`;
+        els.prestigeRunCoreText.textContent = formatNumber(state.stats.run.coresMade);
+        els.prestigeStatusText.textContent = gain > 0 ? "転生可能" : "準備中";
+        els.prestigeRequirementText.textContent = gain > 0
+          ? "転生すると通常進行はリセットされますが、Legacy Coresと累計統計は維持されます。"
+          : "目安としてCoresを2個以上、または十分な高級ラインを確保すると最初の転生が見えてきます。";
+        els.prestigeBtn.disabled = gain <= 0;
+        els.prestigeRunsText.textContent = formatNumber(state.prestige.totalPrestiges);
+        els.prestigeLifetimeText.textContent = formatNumber(state.prestige.totalEarned);
+        els.prestigeBestText.textContent = formatNumber(state.stats.total.peakCoreStock);
+      }
+
+      function renderBase() {
+        normalizeResources();
+        refreshHighWaterMarks();
+        els.moneyValue.textContent = formatNumber(state.money);
+        els.scrapValue.textContent = formatNumber(state.scrap);
+        els.partsValue.textContent = formatNumber(state.parts);
+        els.modulesValue.textContent = formatNumber(state.modules);
+        els.circuitsValue.textContent = formatNumber(state.circuits);
+        els.enginesValue.textContent = formatNumber(state.engines);
+        els.coresValue.textContent = formatNumber(state.cores);
+
+        els.debugToggleBtn.classList.toggle("on", state.debugMode);
+        els.debugToggleBtn.textContent = `DEBUG: ${state.debugMode ? "ON" : "OFF"}`;
+        els.soundToggleBtn.classList.toggle("on", state.soundOn);
+        els.soundToggleBtn.textContent = `SE: ${state.soundOn ? "ON" : "OFF"}`;
+
+        els.manualHarvestLv.textContent = state.manualHarvestLevel;
+        els.comboLv.textContent = state.comboLevel;
+        els.droneLv.textContent = state.droneLevel;
+        els.aiYieldLv.textContent = state.aiYieldLevel;
+        els.aiSpeedLv.textContent = state.aiSpeedLevel;
+        els.aiBotsValue.textContent = formatNumber(state.aiBots);
+        els.manualYieldText.textContent = `1 line = ${formatNumber(getManualScrapGain())} Scrap`;
+        els.comboText.textContent = state.comboLevel > 0
+          ? `2-line以上 or 連続消去 ${Math.round(getComboChance() * 100)}% で +${formatNumber(getComboBonus())} Scrap`
+          : "Combo未強化";
+        const stackState = tetris.gameOver ? "JAMMED" : activeTab === "tetris" ? "LIVE" : "IDLE";
+        els.stackStateText.textContent = state.debugMode ? `DEBUG ${stackState}` : stackState;
+        els.manualLinesValue.textContent = formatNumber(tetris.lines);
+        els.streakValue.textContent = formatNumber(tetris.comboStreak);
+        els.nextPieceText.textContent = tetris.nextType || "-";
+        els.dropModeText.textContent = `${formatNumber(getManualDropInterval())}s`;
+        els.debugPanel.hidden = !state.debugMode;
+        els.debugActivePiece.textContent = tetris.active?.type || "-";
+        els.debugNextPiece.textContent = tetris.nextType || "-";
+        els.debugBagSize.textContent = formatNumber(tetris.queue.length);
+        els.debugAiBots.textContent = formatNumber(state.aiBots);
+
+        els.manualHarvestCost.textContent = formatCost(manualHarvestCost());
+        els.comboCost.textContent = formatCost(comboCost());
+        els.droneCost.textContent = formatCost(droneCost());
+        els.buyBotCost.textContent = formatCost(botCost());
+        els.aiYieldCost.textContent = formatCost(aiYieldCost());
+        els.aiSpeedCost.textContent = formatCost(aiSpeedCost());
+
+        els.aiGateText.textContent = state.research.scripts
+          ? "AIスタッカーを購入して自動Scrap採掘を始められます。"
+          : "Researchで「Stacking Scripts」を完了するとAIスタッカーを購入できます。";
+
+        const aiOutput = state.research.scripts && state.aiBots > 0
+          ? state.aiBots * getAiYield() * getAiRate()
+          : 0;
+        els.aiOutputText.textContent = `${formatNumber(aiOutput)} Scrap/s`;
+        els.aiStatus.textContent = !state.research.scripts
+          ? "AI未解禁"
+          : state.aiBots > 0
+            ? `${formatNumber(state.aiBots)} bots稼働中`
+            : "待機中";
+
+        els.manualHarvestBtn.disabled = !canAfford(manualHarvestCost());
+        els.comboBtn.disabled = !canAfford(comboCost());
+        els.droneBtn.disabled = !canAfford(droneCost());
+        els.buyBotBtn.disabled = !state.research.scripts || !canAfford(botCost());
+        els.aiYieldBtn.disabled = !state.research.scripts || !canAfford(aiYieldCost());
+        els.aiSpeedBtn.disabled = !state.research.scripts || !canAfford(aiSpeedCost());
+        els.manualBtn.disabled = tetris.gameOver || !tetris.active;
+        els.moveLeftBtn.disabled = tetris.gameOver || !tetris.active;
+        els.rotateBtn.disabled = tetris.gameOver || !tetris.active;
+        els.moveRightBtn.disabled = tetris.gameOver || !tetris.active;
+        els.softDropBtn.disabled = tetris.gameOver || !tetris.active;
+
+        const f = factoryStageInfo();
+        els.factoryStatus.textContent = f.status;
+        els.factoryModeText.textContent = f.mode;
+        els.factoryStageName.textContent = f.name;
+        els.factoryStageText.textContent = f.text;
+
+        els.manualRecipeText.textContent = `${formatNumber(getManualPartCost())} Scrap → ${formatNumber(getManualPartYield())} Ingots`;
+        els.manualRecipeInline.textContent = `${formatNumber(getManualPartCost())} Scrap → ${formatNumber(getManualPartYield())} Ingots`;
+        els.partSellText.textContent = `1 Ingots = $${formatNumber(getPartSellValue())}`;
+        els.partStockText.textContent = formatNumber(state.parts);
+
+        els.workshopLv.textContent = state.workshopLevel;
+        els.conveyorLv.textContent = state.conveyorLevel;
+        els.efficiencyLv.textContent = state.efficiencyLevel;
+        els.gridLv.textContent = state.gridLevel;
+        els.marketLv.textContent = state.marketLevel;
+        els.contractLv.textContent = state.contractLevel;
+
+        els.workshopCost.textContent = formatCost(workshopCost());
+        els.buildLineCost.textContent = formatCost(buildLineCost());
+        els.conveyorCost.textContent = formatCost(conveyorCost());
+        els.efficiencyCost.textContent = formatCost(efficiencyCost());
+        els.gridCost.textContent = formatCost(gridCost());
+        els.marketCost.textContent = formatCost(marketCost());
+        els.contractCost.textContent = formatCost(contractCost());
+
+        els.lineCountValue.textContent = formatNumber(state.lineCount);
+        els.autoOutputText.textContent = `${formatNumber(getAutoOutputPerSec())} Ingots/s`;
+        els.autoRecipeText.textContent = state.research.automation
+          ? `${formatNumber(getAutoPartCost())} Scrap → 1 Ingots / ${formatNumber(getAutoCycle())}s`
+          : "研究で解禁";
+        els.automationNote.textContent = state.research.automation
+          ? "自動製錬ラインは解禁済みです。高額投資で本数を増やしてください。"
+          : "Trade Desk後にSmelter Automation研究を進めると、ここから自動製錬ラインが解禁されます。";
+        els.smelterPreviewText.textContent = state.lineCount > 4
+          ? `先頭4ラインを監視表示中です。さらに ${formatNumber(state.lineCount - 4)} lines が集計処理で稼働しています。`
+          : "監視表示は先頭4ラインまでです。追加ラインは集計処理で稼働します。";
+
+        els.manualPartBtn.disabled = state.scrap < getManualPartCost();
+        els.sellPartBtn.disabled = state.parts < 1;
+        els.sellAllPartsBtn.disabled = state.parts < 1;
+        els.workshopBtn.disabled = !canAfford(workshopCost());
+        els.buildLineBtn.disabled = !state.research.automation || !canAfford(buildLineCost());
+        els.conveyorBtn.disabled = !state.research.automation || !canAfford(conveyorCost());
+        els.efficiencyBtn.disabled = !state.research.automation || !canAfford(efficiencyCost());
+        els.gridBtn.disabled = !canAfford(gridCost());
+        els.marketBtn.disabled = !canAfford(marketCost());
+        els.contractBtn.disabled = !canAfford(contractCost());
+
+        els.autoSellPartsBtn.hidden = !state.research.logistics;
+        els.autoSellPartsBtn.classList.toggle("on", state.autoSell.parts);
+        els.autoSellPartsBtn.textContent = `Auto Sell Ingots: ${state.autoSell.parts ? "ON" : "OFF"}`;
+
+        const visibleSmelters = Math.min(4, state.lineCount);
+        const sharedProgress = state.lineCount > 0 ? (smelterWorkAccumulator / getAutoCycle()) % 1 : 0;
+        lineEls.forEach((line, index) => {
+          const active = state.research.automation && index < visibleSmelters;
+          line.wrap.classList.toggle("locked", !active);
+          line.belt.classList.toggle("active", active);
+          line.label.textContent = active
+            ? (state.scrap >= getAutoPartCost() ? "稼働可能" : "材料待ち")
+            : (state.research.automation ? "未建設" : "研究待ち");
+          const progress = active
+            ? ((sharedProgress + index / Math.max(1, visibleSmelters)) % 1)
+            : 0;
+          line.meter.style.transform = `scaleX(${progress})`;
+        });
+
+        renderResearch();
+        renderStats();
+        renderAscension();
+      }
+
+      function renderStages() {
+        stageConfigs.forEach((stage) => {
+          const dom = stageEls[stage.key];
+          const unlocked = state.research[stage.researchKey];
+          dom.tabBtn.hidden = !unlocked;
+          dom.panel.hidden = !unlocked;
+          if (!unlocked) return;
+
+          const machine = getStageMachine(stage);
+          const info = stageInfo(stage);
+          dom.status.textContent = info.status;
+          dom.stageName.textContent = info.name;
+          dom.stageText.textContent = info.text;
+          dom.rateText.textContent = machine.lines > 0
+            ? `${formatNumber(machine.lines)} lines · ${formatNumber(getStageOutputPerSec(stage))} ${stage.outputLabel}/s`
+            : "手動のみ";
+
+          dom.recipeText.textContent = `${stage.recipe} ${stage.inputLabel} → 1 ${stage.outputLabel}`;
+          dom.recipeInline.textContent = `${stage.recipe} ${stage.inputLabel} → 1 ${stage.outputLabel}`;
+          dom.lineText.textContent = machine.lines > 0
+            ? `${formatNumber(machine.lines)} lines`
+            : "0 lines";
+          dom.yieldText.textContent = `+1 chance ${Math.round(getStageBonusChance(stage) * 100)}%`;
+          dom.sellText.textContent = `1 ${stage.outputLabel} = $${formatNumber(getStageSellValue(stage))}`;
+          dom.sellInline.textContent = `1 ${stage.outputLabel} = $${formatNumber(getStageSellValue(stage))}`;
+
+          dom.board.classList.toggle("active", machine.lines > 0);
+          dom.shell.classList.toggle("active", machine.lines > 0);
+          dom.lane.classList.toggle("active", machine.lines > 0);
+
+          dom.installActionText.textContent = machine.lines === 0 ? "建設" : "増設";
+          dom.installCost.textContent = formatCost(stageLineCost(stage));
+          dom.speedLv.textContent = machine.speed;
+          dom.speedCost.textContent = formatCost(stageSpeedCost(stage));
+          dom.valueLv.textContent = machine.value;
+          dom.valueCost.textContent = formatCost(stageValueCost(stage));
+          dom.yieldLv.textContent = machine.yield;
+          dom.yieldCost.textContent = formatCost(stageYieldCost(stage));
+
+          dom.manualBtn.disabled = state[stage.input] < stage.recipe;
+          dom.sellOneBtn.disabled = state[stage.output] < 1;
+          dom.sellAllBtn.disabled = state[stage.output] < 1;
+          dom.installBtn.disabled = !canAfford(stageLineCost(stage));
+          dom.speedBtn.disabled = machine.lines === 0 || !canAfford(stageSpeedCost(stage));
+          dom.valueBtn.disabled = machine.lines === 0 || !canAfford(stageValueCost(stage));
+          dom.yieldBtn.disabled = machine.lines === 0 || !canAfford(stageYieldCost(stage));
+
+          dom.autoSellBtn.hidden = !state.research.logistics;
+          dom.autoSellBtn.classList.toggle("on", state.autoSell[stage.output]);
+          dom.autoSellBtn.textContent = `Auto Sell ${stage.outputLabel}: ${state.autoSell[stage.output] ? "ON" : "OFF"}`;
+        });
+      }
+
+      function render() {
+        renderBase();
+        renderStages();
+        drawManualTetris();
+        drawNextPreview();
+      }
+
+      els.debugToggleBtn.addEventListener("click", toggleDebugMode);
+      els.soundToggleBtn.addEventListener("click", () => {
+        state.soundOn = !state.soundOn;
+        sfx.enabled = state.soundOn;
+        render();
+      });
+
+      els.manualBtn.addEventListener("click", hardDropActivePiece);
+      els.moveLeftBtn.addEventListener("click", () => tryMovePiece(-1, 0, "move"));
+      els.rotateBtn.addEventListener("click", rotateActivePiece);
+      els.moveRightBtn.addEventListener("click", () => tryMovePiece(1, 0, "move"));
+      els.softDropBtn.addEventListener("click", () => softDropActivePiece(true));
+      els.resetStackBtn.addEventListener("click", () => {
+        resetTetrisBoard();
+        sfx.play("process");
+        showToast("盤面を再初期化しました");
+        render();
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.code === "F2") {
+          event.preventDefault();
+          toggleDebugMode();
+          return;
+        }
+        if (activeTab !== "tetris") return;
+        switch (event.code) {
+          case "ArrowLeft":
+          case "KeyA":
+            event.preventDefault();
+            tryMovePiece(-1, 0, "move");
+            break;
+          case "ArrowRight":
+          case "KeyD":
+            event.preventDefault();
+            tryMovePiece(1, 0, "move");
+            break;
+          case "ArrowUp":
+          case "KeyW":
+            event.preventDefault();
+            rotateActivePiece();
+            break;
+          case "ArrowDown":
+          case "KeyS":
+            event.preventDefault();
+            softDropActivePiece(true);
+            break;
+          case "Space":
+            event.preventDefault();
+            hardDropActivePiece();
+            break;
+        }
+      });
+
+      els.debugScrapBtn.addEventListener("click", () => {
+        const amount = readDebugNumber(els.debugScrapInput, 200);
+        debugGrant({ scrap: amount }, `Debug: Scrap +${formatNumber(amount)}`);
+      });
+
+      els.debugIngotBtn.addEventListener("click", () => {
+        const amount = readDebugNumber(els.debugIngotInput, 20);
+        debugGrant({ parts: amount }, `Debug: Ingots +${formatNumber(amount)}`);
+      });
+
+      els.debugMoneyBtn.addEventListener("click", () => {
+        const amount = readDebugNumber(els.debugMoneyInput, 500);
+        debugGrant({ money: amount }, `Debug: $G +${formatNumber(amount)}`);
+      });
+
+      els.debugResearchBtn.addEventListener("click", unlockAllResearch);
+
+      els.debugBotBtn.addEventListener("click", () => {
+        const amount = readDebugNumber(els.debugBotInput, 1);
+        if (!state.research.scripts) {
+          state.research.scripts = true;
+        }
+        debugGrant({ aiBots: amount }, `Debug: AI Bot +${formatNumber(amount)}`, "process");
+      });
+
+      els.debugSmelterLineBtn.addEventListener("click", () => {
+        state.research.automation = true;
+        addSmelterLines(readDebugNumber(els.debugSmelterLineInput, 5), "debug");
+      });
+
+      els.debugLegacyBtn.addEventListener("click", () => {
+        const amount = readDebugNumber(els.debugLegacyInput, 1);
+        state.prestige.legacyCores += amount;
+        state.prestige.totalEarned += amount;
+        addStat("legacyEarned", amount, "total");
+        showToast(`Debug: Legacy Cores +${formatNumber(amount)}`);
+        sfx.play("reactorBuild");
+        render();
+      });
+
+      els.debugForceIBtn.addEventListener("click", () => {
+        forceNextPiece("I");
+      });
+
+      els.debugResetBtn.addEventListener("click", () => {
+        resetTetrisBoard();
+        sfx.play("process");
+        showToast("Debug: 盤面を再初期化しました");
+        render();
+      });
+
+      els.prestigeBtn.addEventListener("click", performPrestige);
+
+      els.manualHarvestBtn.addEventListener("click", () => {
+        spend(manualHarvestCost(), () => {
+          state.manualHarvestLevel += 1;
+          showToast(`Manual Harvest Lv.${state.manualHarvestLevel}`);
+        });
+      });
+
+      els.comboBtn.addEventListener("click", () => {
+        spend(comboCost(), () => {
+          state.comboLevel += 1;
+          showToast(`Salvage Combo Lv.${state.comboLevel}`);
+        });
+      });
+
+      els.droneBtn.addEventListener("click", () => {
+        spend(droneCost(), () => {
+          state.droneLevel += 1;
+          showToast(`Salvage Drones Lv.${state.droneLevel}`);
+        });
+      });
+
+      els.buyBotBtn.addEventListener("click", () => {
+        if (!state.research.scripts) {
+          showToast("Stacking Scripts研究が必要です");
+          sfx.play("error");
+          return;
+        }
+        spend(botCost(), () => {
+          state.aiBots += 1;
+          showToast(`AIスタッカー導入 (${state.aiBots}機)`);
+        });
+      });
+
+      els.aiYieldBtn.addEventListener("click", () => {
+        if (!state.research.scripts) {
+          showToast("Stacking Scripts研究が必要です");
+          sfx.play("error");
+          return;
+        }
+        spend(aiYieldCost(), () => {
+          state.aiYieldLevel += 1;
+          showToast(`AI Yield Lv.${state.aiYieldLevel}`);
+        });
+      });
+
+      els.aiSpeedBtn.addEventListener("click", () => {
+        if (!state.research.scripts) {
+          showToast("Stacking Scripts研究が必要です");
+          sfx.play("error");
+          return;
+        }
+        spend(aiSpeedCost(), () => {
+          state.aiSpeedLevel += 1;
+          showToast(`AI Speed Lv.${state.aiSpeedLevel}`);
+        });
+      });
+
+      els.manualPartBtn.addEventListener("click", doManualPartProcess);
+
+      els.sellPartBtn.addEventListener("click", () => {
+        if (!sellSingle("parts")) {
+          showToast("売却できるIngotsがありません");
+          sfx.play("error");
+          return;
+        }
+        showToast("Ingotsを1個売却");
+        render();
+      });
+
+      els.sellAllPartsBtn.addEventListener("click", () => {
+        if (!sellAll("parts")) {
+          showToast("売却できるIngotsがありません");
+          sfx.play("error");
+          return;
+        }
+        showToast("Ingotsを一括売却");
+        render();
+      });
+
+      els.autoSellPartsBtn.addEventListener("click", () => {
+        state.autoSell.parts = !state.autoSell.parts;
+        sfx.play("build");
+        render();
+      });
+
+      els.workshopBtn.addEventListener("click", () => {
+        spend(workshopCost(), () => {
+          state.workshopLevel += 1;
+          showToast(`Furnace Lining Lv.${state.workshopLevel}`);
+        });
+      });
+
+      els.buildLineBtn.addEventListener("click", () => {
+        if (!state.research.automation) {
+          showToast("Smelter Automation研究が必要です");
+          sfx.play("error");
+          return;
+        }
+        spend(buildLineCost(), () => {
+          addStat("smelterLinesBuilt", 1);
+          state.lineCount += 1;
+          showToast(`Auto Smelter ${state.lineCount} 本目を増築`);
+        });
+      });
+
+      els.conveyorBtn.addEventListener("click", () => {
+        if (!state.research.automation) {
+          showToast("Smelter Automation研究が必要です");
+          sfx.play("error");
+          return;
+        }
+        spend(conveyorCost(), () => {
+          state.conveyorLevel += 1;
+          showToast(`Conveyor Speed Lv.${state.conveyorLevel}`);
+        });
+      });
+
+      els.efficiencyBtn.addEventListener("click", () => {
+        if (!state.research.automation) {
+          showToast("Smelter Automation研究が必要です");
+          sfx.play("error");
+          return;
+        }
+        spend(efficiencyCost(), () => {
+          state.efficiencyLevel += 1;
+          showToast(`Line Efficiency Lv.${state.efficiencyLevel}`);
+        });
+      });
+
+      els.gridBtn.addEventListener("click", () => {
+        spend(gridCost(), () => {
+          state.gridLevel += 1;
+          showToast(`Power Grid Lv.${state.gridLevel}`);
+        });
+      });
+
+      els.marketBtn.addEventListener("click", () => {
+        spend(marketCost(), () => {
+          state.marketLevel += 1;
+          showToast(`Market Analytics Lv.${state.marketLevel}`);
+        });
+      });
+
+      els.contractBtn.addEventListener("click", () => {
+        spend(contractCost(), () => {
+          state.contractLevel += 1;
+          showToast(`Contract Desk Lv.${state.contractLevel}`);
+        });
+      });
+
+      researchConfigs.forEach((item) => {
+        $(`research-btn-${item.key}`).addEventListener("click", () => completeResearch(item.key));
+      });
+
+      stageConfigs.forEach((stage) => {
+        const dom = stageEls[stage.key];
+        const machine = () => getStageMachine(stage);
+
+        dom.manualBtn.addEventListener("click", () => {
+          if (!processStage(stage, false)) {
+            showToast(`${stage.inputLabel}が足りません`);
+            sfx.play("error");
+            return;
+          }
+          showToast(`${stage.outputLabel}を加工`);
+          render();
+        });
+
+        dom.sellOneBtn.addEventListener("click", () => {
+          if (!sellSingle(stage.output)) {
+            showToast(`売却できる${stage.outputLabel}がありません`);
+            sfx.play("error");
+            return;
+          }
+          showToast(`${stage.outputLabel}を1個売却`);
+          render();
+        });
+
+        dom.sellAllBtn.addEventListener("click", () => {
+          if (!sellAll(stage.output)) {
+            showToast(`売却できる${stage.outputLabel}がありません`);
+            sfx.play("error");
+            return;
+          }
+          showToast(`${stage.outputLabel}を一括売却`);
+          render();
+        });
+
+        dom.autoSellBtn.addEventListener("click", () => {
+          state.autoSell[stage.output] = !state.autoSell[stage.output];
+          sfx.play("build");
+          render();
+        });
+
+        dom.installBtn.addEventListener("click", () => {
+          spend(stageLineCost(stage), () => {
+            machine().lines += 1;
+            addStat("factoryLinesBuilt", 1);
+            showToast(`${stage.installLabel} line ${formatNumber(machine().lines)} を増設`);
+          }, "資源が足りません", stage.installSound || "build");
+        });
+
+        dom.speedBtn.addEventListener("click", () => {
+          if (machine().lines === 0) {
+            showToast("先に設備を設置してください");
+            sfx.play("error");
+            return;
+          }
+          spend(stageSpeedCost(stage), () => {
+            machine().speed += 1;
+            showToast(`${stage.outputLabel} Speed Lv.${machine().speed}`);
+          });
+        });
+
+        dom.valueBtn.addEventListener("click", () => {
+          if (machine().lines === 0) {
+            showToast("先に設備を設置してください");
+            sfx.play("error");
+            return;
+          }
+          spend(stageValueCost(stage), () => {
+            machine().value += 1;
+            showToast(`${stage.outputLabel} Quality Lv.${machine().value}`);
+          });
+        });
+
+        dom.yieldBtn.addEventListener("click", () => {
+          if (machine().lines === 0) {
+            showToast("先に設備を設置してください");
+            sfx.play("error");
+            return;
+          }
+          spend(stageYieldCost(stage), () => {
+            machine().yield += 1;
+            showToast(`${stage.outputLabel} Yield Lv.${machine().yield}`);
+          });
+        });
+      });
+
+      function gameLoop(now) {
+        const dt = Math.min((now - lastFrame) / 1000, 0.25);
+        lastFrame = now;
+        addStat("playSeconds", dt);
+
+        updateTetris(dt);
+
+        if (state.research.scripts && state.aiBots > 0) {
+          aiAccumulator += dt;
+          const aiInterval = 1 / getAiRate();
+          while (aiAccumulator >= aiInterval) {
+            aiAccumulator -= aiInterval;
+            runAiCycle();
+          }
+        } else {
+          aiAccumulator = 0;
+        }
+
+        if (state.research.automation && state.lineCount > 0) {
+          const cycle = getAutoCycle();
+          smelterWorkAccumulator += dt * state.lineCount;
+          const ready = Math.floor(smelterWorkAccumulator / cycle);
+          if (ready > 0) {
+            const worked = runAutoLine(ready);
+            smelterWorkAccumulator -= worked * cycle;
+            if (worked < ready) {
+              smelterWorkAccumulator = Math.min(smelterWorkAccumulator, cycle * state.lineCount);
+            }
+          }
+        } else {
+          smelterWorkAccumulator = 0;
+        }
+
+        stageConfigs.forEach((stage) => {
+          const machine = getStageMachine(stage);
+          if (!state.research[stage.researchKey] || machine.lines === 0) {
+            stageAccumulators[stage.key] = 0;
+            return;
+          }
+          const cycle = getStageCycle(stage);
+          stageAccumulators[stage.key] += dt * machine.lines;
+          const ready = Math.floor(stageAccumulators[stage.key] / cycle);
+          if (ready > 0) {
+            const worked = processStage(stage, ready, true);
+            const completed = Math.floor(worked || 0);
+            stageAccumulators[stage.key] -= completed * cycle;
+            if (completed < ready) {
+              stageAccumulators[stage.key] = Math.min(stageAccumulators[stage.key], cycle * machine.lines);
+            }
+          }
+        });
+
+        if (state.research.logistics) {
+          sellAccumulator += dt;
+          while (sellAccumulator >= 1) {
+            sellAccumulator -= 1;
+            if (state.autoSell.parts) sellAll("parts", true);
+            stageConfigs.forEach((stage) => {
+              if (state.autoSell[stage.output]) {
+                sellAll(stage.output, true);
+              }
+            });
+          }
+        } else {
+          sellAccumulator = 0;
+        }
+
+        render();
+        requestAnimationFrame(gameLoop);
+      }
+
+      resetTetrisBoard();
+      render();
+      requestAnimationFrame(gameLoop);
+    })();
+  </script>
+</body>
+</html>
